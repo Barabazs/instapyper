@@ -20,6 +20,7 @@ except ImportError:
     )
     sys.exit(1)
 
+from . import __version__
 from .client import Bookmark, Instapaper
 from .exceptions import AuthenticationError, InstapaperError
 
@@ -33,8 +34,6 @@ def _handle_sigint(signum: int, frame: object) -> None:
 
 # Register signal handler for clean Ctrl-C handling
 signal.signal(signal.SIGINT, _handle_sigint)
-
-__version__ = "0.0.1"
 
 # Global state for flags
 _no_input: bool = False
