@@ -102,35 +102,35 @@ class AsyncBookmark(BookmarkBase):
     async def star(self) -> Self:
         """Star this bookmark."""
         data = await self._client._request("bookmarks/star", bookmark_id=self.bookmark_id)
-        bookmarks = data.get("bookmarks", [])
-        if bookmarks:
-            return type(self).from_api(bookmarks[0], self._client)
+        for item in data.get("items", []):
+            if isinstance(item, dict) and item.get("type") == "bookmark":
+                return type(self).from_api(item, self._client)
         self.starred = True
         return self
 
     async def unstar(self) -> Self:
         """Unstar this bookmark."""
         data = await self._client._request("bookmarks/unstar", bookmark_id=self.bookmark_id)
-        bookmarks = data.get("bookmarks", [])
-        if bookmarks:
-            return type(self).from_api(bookmarks[0], self._client)
+        for item in data.get("items", []):
+            if isinstance(item, dict) and item.get("type") == "bookmark":
+                return type(self).from_api(item, self._client)
         self.starred = False
         return self
 
     async def archive(self) -> Self:
         """Archive this bookmark."""
         data = await self._client._request("bookmarks/archive", bookmark_id=self.bookmark_id)
-        bookmarks = data.get("bookmarks", [])
-        if bookmarks:
-            return type(self).from_api(bookmarks[0], self._client)
+        for item in data.get("items", []):
+            if isinstance(item, dict) and item.get("type") == "bookmark":
+                return type(self).from_api(item, self._client)
         return self
 
     async def unarchive(self) -> Self:
         """Unarchive this bookmark."""
         data = await self._client._request("bookmarks/unarchive", bookmark_id=self.bookmark_id)
-        bookmarks = data.get("bookmarks", [])
-        if bookmarks:
-            return type(self).from_api(bookmarks[0], self._client)
+        for item in data.get("items", []):
+            if isinstance(item, dict) and item.get("type") == "bookmark":
+                return type(self).from_api(item, self._client)
         return self
 
     async def move(self, folder_id: int) -> Self:
@@ -138,9 +138,9 @@ class AsyncBookmark(BookmarkBase):
         data = await self._client._request(
             "bookmarks/move", bookmark_id=self.bookmark_id, folder_id=folder_id
         )
-        bookmarks = data.get("bookmarks", [])
-        if bookmarks:
-            return type(self).from_api(bookmarks[0], self._client)
+        for item in data.get("items", []):
+            if isinstance(item, dict) and item.get("type") == "bookmark":
+                return type(self).from_api(item, self._client)
         return self
 
     async def delete(self) -> None:

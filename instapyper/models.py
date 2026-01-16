@@ -209,35 +209,35 @@ class Bookmark(BookmarkBase):
     def star(self) -> Self:
         """Star this bookmark."""
         data = self._client._request("bookmarks/star", bookmark_id=self.bookmark_id)
-        bookmarks = data.get("bookmarks", [])
-        if bookmarks:
-            return type(self).from_api(bookmarks[0], self._client)
+        for item in data.get("items", []):
+            if isinstance(item, dict) and item.get("type") == "bookmark":
+                return type(self).from_api(item, self._client)
         self.starred = True
         return self
 
     def unstar(self) -> Self:
         """Unstar this bookmark."""
         data = self._client._request("bookmarks/unstar", bookmark_id=self.bookmark_id)
-        bookmarks = data.get("bookmarks", [])
-        if bookmarks:
-            return type(self).from_api(bookmarks[0], self._client)
+        for item in data.get("items", []):
+            if isinstance(item, dict) and item.get("type") == "bookmark":
+                return type(self).from_api(item, self._client)
         self.starred = False
         return self
 
     def archive(self) -> Self:
         """Archive this bookmark."""
         data = self._client._request("bookmarks/archive", bookmark_id=self.bookmark_id)
-        bookmarks = data.get("bookmarks", [])
-        if bookmarks:
-            return type(self).from_api(bookmarks[0], self._client)
+        for item in data.get("items", []):
+            if isinstance(item, dict) and item.get("type") == "bookmark":
+                return type(self).from_api(item, self._client)
         return self
 
     def unarchive(self) -> Self:
         """Unarchive this bookmark."""
         data = self._client._request("bookmarks/unarchive", bookmark_id=self.bookmark_id)
-        bookmarks = data.get("bookmarks", [])
-        if bookmarks:
-            return type(self).from_api(bookmarks[0], self._client)
+        for item in data.get("items", []):
+            if isinstance(item, dict) and item.get("type") == "bookmark":
+                return type(self).from_api(item, self._client)
         return self
 
     def move(self, folder_id: int) -> Self:
@@ -245,9 +245,9 @@ class Bookmark(BookmarkBase):
         data = self._client._request(
             "bookmarks/move", bookmark_id=self.bookmark_id, folder_id=folder_id
         )
-        bookmarks = data.get("bookmarks", [])
-        if bookmarks:
-            return type(self).from_api(bookmarks[0], self._client)
+        for item in data.get("items", []):
+            if isinstance(item, dict) and item.get("type") == "bookmark":
+                return type(self).from_api(item, self._client)
         return self
 
     def delete(self) -> None:
@@ -264,9 +264,9 @@ class Bookmark(BookmarkBase):
             progress=progress,
             progress_timestamp=int(time.time()),
         )
-        bookmarks = data.get("bookmarks", [])
-        if bookmarks:
-            return type(self).from_api(bookmarks[0], self._client)
+        for item in data.get("items", []):
+            if isinstance(item, dict) and item.get("type") == "bookmark":
+                return type(self).from_api(item, self._client)
         self.progress = progress
         self.progress_timestamp = int(time.time())
         return self
