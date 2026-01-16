@@ -511,26 +511,20 @@ class TestBookmarksDelete:
 class TestBookmarksArchive:
     """Tests for bookmarks archive command."""
 
-    @patch("instapyper.cli._find_bookmark")
     @patch("instapyper.cli.get_client")
-    def test_archive_single(self, mock_get_client: MagicMock, mock_find: MagicMock) -> None:
+    def test_archive_single(self, mock_get_client: MagicMock) -> None:
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
-        mock_bookmark = MagicMock()
-        mock_find.return_value = mock_bookmark
 
         result = runner.invoke(app, ["bookmarks", "archive", "100001"])
         assert result.exit_code == 0
         assert "Archived bookmark 100001" in result.stdout
-        mock_bookmark.archive.assert_called_once()
+        mock_client.archive_bookmark.assert_called_once_with(100001)
 
-    @patch("instapyper.cli._find_bookmark")
     @patch("instapyper.cli.get_client")
-    def test_archive_multiple(self, mock_get_client: MagicMock, mock_find: MagicMock) -> None:
+    def test_archive_multiple(self, mock_get_client: MagicMock) -> None:
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
-        mock_bookmark = MagicMock()
-        mock_find.return_value = mock_bookmark
 
         result = runner.invoke(app, ["bookmarks", "archive", "100001", "100002"])
         assert result.exit_code == 0
@@ -541,44 +535,35 @@ class TestBookmarksArchive:
 class TestBookmarksStar:
     """Tests for bookmarks star command."""
 
-    @patch("instapyper.cli._find_bookmark")
     @patch("instapyper.cli.get_client")
-    def test_star_single(self, mock_get_client: MagicMock, mock_find: MagicMock) -> None:
+    def test_star_single(self, mock_get_client: MagicMock) -> None:
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
-        mock_bookmark = MagicMock()
-        mock_find.return_value = mock_bookmark
 
         result = runner.invoke(app, ["bookmarks", "star", "100001"])
         assert result.exit_code == 0
         assert "Starred bookmark 100001" in result.stdout
         assert "★" in result.stdout
-        mock_bookmark.star.assert_called_once()
+        mock_client.star_bookmark.assert_called_once_with(100001)
 
 
 class TestBookmarksUnarchive:
     """Tests for bookmarks unarchive command."""
 
-    @patch("instapyper.cli._find_bookmark")
     @patch("instapyper.cli.get_client")
-    def test_unarchive_single(self, mock_get_client: MagicMock, mock_find: MagicMock) -> None:
+    def test_unarchive_single(self, mock_get_client: MagicMock) -> None:
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
-        mock_bookmark = MagicMock()
-        mock_find.return_value = mock_bookmark
 
         result = runner.invoke(app, ["bookmarks", "unarchive", "100001"])
         assert result.exit_code == 0
         assert "Unarchived bookmark 100001" in result.stdout
-        mock_bookmark.unarchive.assert_called_once()
+        mock_client.unarchive_bookmark.assert_called_once_with(100001)
 
-    @patch("instapyper.cli._find_bookmark")
     @patch("instapyper.cli.get_client")
-    def test_unarchive_multiple(self, mock_get_client: MagicMock, mock_find: MagicMock) -> None:
+    def test_unarchive_multiple(self, mock_get_client: MagicMock) -> None:
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
-        mock_bookmark = MagicMock()
-        mock_find.return_value = mock_bookmark
 
         result = runner.invoke(app, ["bookmarks", "unarchive", "100001", "100002"])
         assert result.exit_code == 0
@@ -589,50 +574,35 @@ class TestBookmarksUnarchive:
 class TestBookmarksMove:
     """Tests for bookmarks move command."""
 
-    @patch("instapyper.cli._find_bookmark")
     @patch("instapyper.cli._resolve_folder")
     @patch("instapyper.cli.get_client")
-    def test_move_single(
-        self, mock_get_client: MagicMock, mock_resolve: MagicMock, mock_find: MagicMock
-    ) -> None:
+    def test_move_single(self, mock_get_client: MagicMock, mock_resolve: MagicMock) -> None:
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         mock_resolve.return_value = 5001
-        mock_bookmark = MagicMock()
-        mock_find.return_value = mock_bookmark
 
         result = runner.invoke(app, ["bookmarks", "move", "100001", "-F", "5001"])
         assert result.exit_code == 0
         assert "Moved bookmark 100001" in result.stdout
-        mock_bookmark.move.assert_called_once_with(5001)
+        mock_client.move_bookmark.assert_called_once_with(100001, 5001)
 
-    @patch("instapyper.cli._find_bookmark")
     @patch("instapyper.cli._resolve_folder")
     @patch("instapyper.cli.get_client")
-    def test_move_by_folder_name(
-        self, mock_get_client: MagicMock, mock_resolve: MagicMock, mock_find: MagicMock
-    ) -> None:
+    def test_move_by_folder_name(self, mock_get_client: MagicMock, mock_resolve: MagicMock) -> None:
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         mock_resolve.return_value = 5001
-        mock_bookmark = MagicMock()
-        mock_find.return_value = mock_bookmark
 
         result = runner.invoke(app, ["bookmarks", "move", "100001", "-F", "Tech"])
         assert result.exit_code == 0
         mock_resolve.assert_called_once_with(mock_client, "Tech")
 
-    @patch("instapyper.cli._find_bookmark")
     @patch("instapyper.cli._resolve_folder")
     @patch("instapyper.cli.get_client")
-    def test_move_multiple(
-        self, mock_get_client: MagicMock, mock_resolve: MagicMock, mock_find: MagicMock
-    ) -> None:
+    def test_move_multiple(self, mock_get_client: MagicMock, mock_resolve: MagicMock) -> None:
         mock_client = MagicMock()
         mock_get_client.return_value = mock_client
         mock_resolve.return_value = 5001
-        mock_bookmark = MagicMock()
-        mock_find.return_value = mock_bookmark
 
         result = runner.invoke(app, ["bookmarks", "move", "100001", "100002", "-F", "5001"])
         assert result.exit_code == 0

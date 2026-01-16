@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -457,6 +458,47 @@ class AsyncInstapaper:
         """Delete a bookmark by ID."""
         await self._request("bookmarks/delete", bookmark_id=bookmark_id)
 
+    async def update_bookmark_progress(self, bookmark_id: int, progress: float) -> None:
+        """Update reading progress for a bookmark.
+
+        Args:
+            bookmark_id: The bookmark ID.
+            progress: Reading progress (0.0 to 1.0).
+        """
+        if not 0.0 <= progress <= 1.0:
+            raise ValueError("Progress must be between 0.0 and 1.0")
+        await self._request(
+            "bookmarks/update_read_progress",
+            bookmark_id=bookmark_id,
+            progress=progress,
+            progress_timestamp=int(time.time()),
+        )
+
+    async def star_bookmark(self, bookmark_id: int) -> None:
+        """Star a bookmark by ID."""
+        await self._request("bookmarks/star", bookmark_id=bookmark_id)
+
+    async def unstar_bookmark(self, bookmark_id: int) -> None:
+        """Unstar a bookmark by ID."""
+        await self._request("bookmarks/unstar", bookmark_id=bookmark_id)
+
+    async def archive_bookmark(self, bookmark_id: int) -> None:
+        """Archive a bookmark by ID."""
+        await self._request("bookmarks/archive", bookmark_id=bookmark_id)
+
+    async def unarchive_bookmark(self, bookmark_id: int) -> None:
+        """Unarchive a bookmark by ID."""
+        await self._request("bookmarks/unarchive", bookmark_id=bookmark_id)
+
+    async def move_bookmark(self, bookmark_id: int, folder_id: int) -> None:
+        """Move a bookmark to a folder.
+
+        Args:
+            bookmark_id: The bookmark ID.
+            folder_id: The destination folder ID.
+        """
+        await self._request("bookmarks/move", bookmark_id=bookmark_id, folder_id=folder_id)
+
     # Folder methods
 
     async def get_folders(self) -> list[AsyncFolder]:
@@ -493,6 +535,12 @@ class AsyncInstapaper:
         """
         order_str = ",".join(f"{fid}:{pos}" for fid, pos in order.items())
         await self._request("folders/set_order", order=order_str)
+
+    # Highlight methods
+
+    async def delete_highlight(self, highlight_id: int) -> None:
+        """Delete a highlight by ID."""
+        await self._request(f"highlights/{highlight_id}/delete")
 
     async def close(self) -> None:
         """Close the underlying HTTP client."""

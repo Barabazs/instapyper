@@ -965,8 +965,7 @@ def bookmarks_archive(
     total = len(bookmark_ids)
     for i, bookmark_id in enumerate(bookmark_ids, 1):
         try:
-            bookmark = _find_bookmark(client, bookmark_id)
-            bookmark.archive()
+            client.archive_bookmark(bookmark_id)
             if total > 1:
                 quiet_print(f"Archived {i}/{total}: {bookmark_id}")
             else:
@@ -993,8 +992,7 @@ def bookmarks_star(
     total = len(bookmark_ids)
     for i, bookmark_id in enumerate(bookmark_ids, 1):
         try:
-            bookmark = _find_bookmark(client, bookmark_id)
-            bookmark.star()
+            client.star_bookmark(bookmark_id)
             if total > 1:
                 quiet_print(f"Starred {i}/{total}: {bookmark_id} ★")
             else:
@@ -1021,8 +1019,7 @@ def bookmarks_unstar(
     total = len(bookmark_ids)
     for i, bookmark_id in enumerate(bookmark_ids, 1):
         try:
-            bookmark = _find_bookmark(client, bookmark_id)
-            bookmark.unstar()
+            client.unstar_bookmark(bookmark_id)
             if total > 1:
                 quiet_print(f"Unstarred {i}/{total}: {bookmark_id}")
             else:
@@ -1049,8 +1046,7 @@ def bookmarks_unarchive(
     total = len(bookmark_ids)
     for i, bookmark_id in enumerate(bookmark_ids, 1):
         try:
-            bookmark = _find_bookmark(client, bookmark_id, folder="archive")
-            bookmark.unarchive()
+            client.unarchive_bookmark(bookmark_id)
             if total > 1:
                 quiet_print(f"Unarchived {i}/{total}: {bookmark_id}")
             else:
@@ -1081,8 +1077,7 @@ def bookmarks_move(
     total = len(bookmark_ids)
     for i, bookmark_id in enumerate(bookmark_ids, 1):
         try:
-            bookmark = _find_bookmark(client, bookmark_id)
-            bookmark.move(folder_id)
+            client.move_bookmark(bookmark_id, folder_id)
             if total > 1:
                 quiet_print(f"Moved {i}/{total}: {bookmark_id} to folder {folder}")
             else:
@@ -1112,8 +1107,7 @@ def bookmarks_progress(
 
     client = get_client()
     try:
-        bookmark = _find_bookmark(client, bookmark_id)
-        bookmark.update_progress(progress)
+        client.update_bookmark_progress(bookmark_id, progress)
         quiet_print(f"Updated progress to {progress:.0%}")
     except InstapaperError as e:
         handle_error(e)
@@ -1485,21 +1479,10 @@ def highlights_delete(
 
     client = get_client()
     try:
-        bookmark = _find_bookmark(client, bookmark_id)
-        highlights = bookmark.get_highlights()
-        highlight = next((h for h in highlights if h.highlight_id == highlight_id), None)
-        if not highlight:
-            error_with_hint(
-                f"Highlight {highlight_id} not found",
-                f"Check highlight IDs with 'instapyper highlights list {bookmark_id}'",
-            )
-            raise typer.Exit(1) from None
-
-        highlight.delete()
+        client.delete_highlight(highlight_id)
         quiet_print(f"Deleted highlight {highlight_id}")
-
     except InstapaperError as e:
-        handle_error(e)
+        handle_error(e, f"Check highlight IDs with 'instapyper highlights list {bookmark_id}'")
         raise typer.Exit(1) from None
 
 

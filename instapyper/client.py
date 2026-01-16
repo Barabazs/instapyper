@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from requests_oauthlib import OAuth1Session
@@ -298,6 +299,47 @@ class Instapaper:
         """Delete a bookmark by ID."""
         self._request("bookmarks/delete", bookmark_id=bookmark_id)
 
+    def update_bookmark_progress(self, bookmark_id: int, progress: float) -> None:
+        """Update reading progress for a bookmark.
+
+        Args:
+            bookmark_id: The bookmark ID.
+            progress: Reading progress (0.0 to 1.0).
+        """
+        if not 0.0 <= progress <= 1.0:
+            raise ValueError("Progress must be between 0.0 and 1.0")
+        self._request(
+            "bookmarks/update_read_progress",
+            bookmark_id=bookmark_id,
+            progress=progress,
+            progress_timestamp=int(time.time()),
+        )
+
+    def star_bookmark(self, bookmark_id: int) -> None:
+        """Star a bookmark by ID."""
+        self._request("bookmarks/star", bookmark_id=bookmark_id)
+
+    def unstar_bookmark(self, bookmark_id: int) -> None:
+        """Unstar a bookmark by ID."""
+        self._request("bookmarks/unstar", bookmark_id=bookmark_id)
+
+    def archive_bookmark(self, bookmark_id: int) -> None:
+        """Archive a bookmark by ID."""
+        self._request("bookmarks/archive", bookmark_id=bookmark_id)
+
+    def unarchive_bookmark(self, bookmark_id: int) -> None:
+        """Unarchive a bookmark by ID."""
+        self._request("bookmarks/unarchive", bookmark_id=bookmark_id)
+
+    def move_bookmark(self, bookmark_id: int, folder_id: int) -> None:
+        """Move a bookmark to a folder.
+
+        Args:
+            bookmark_id: The bookmark ID.
+            folder_id: The destination folder ID.
+        """
+        self._request("bookmarks/move", bookmark_id=bookmark_id, folder_id=folder_id)
+
     # Folder methods
 
     def get_folders(self) -> list[Folder]:
@@ -334,3 +376,9 @@ class Instapaper:
         """
         order_str = ",".join(f"{fid}:{pos}" for fid, pos in order.items())
         self._request("folders/set_order", order=order_str)
+
+    # Highlight methods
+
+    def delete_highlight(self, highlight_id: int) -> None:
+        """Delete a highlight by ID."""
+        self._request(f"highlights/{highlight_id}/delete")
