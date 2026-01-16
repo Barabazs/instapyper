@@ -288,9 +288,10 @@ class Instapaper:
             params["tags"] = json.dumps([{"name": t} for t in tags])
 
         data = self._request("bookmarks/add", **params)
-        bookmarks = data.get("bookmarks", [])
-        if bookmarks:
-            return Bookmark.from_api(bookmarks[0], self)
+        items = data.get("items", [])
+        for item in items:
+            if isinstance(item, dict) and item.get("type") == "bookmark":
+                return Bookmark.from_api(item, self)
         raise InstapaperError("Failed to create bookmark")
 
     def delete_bookmark(self, bookmark_id: int) -> None:

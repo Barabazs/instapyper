@@ -90,25 +90,23 @@ def bookmarks_response() -> dict:
 
 
 @pytest.fixture
-def single_bookmark_response() -> dict:
+def single_bookmark_response() -> list[dict]:
     """Single bookmark response (e.g., after add/star)."""
-    return {
-        "bookmarks": [
-            {
-                "type": "bookmark",
-                "bookmark_id": 100003,
-                "url": "https://example.com/new-article",
-                "title": "New Article",
-                "description": "",
-                "time": 1700001000,
-                "progress": 0.0,
-                "progress_timestamp": 0,
-                "starred": "0",
-                "hash": "ghi789",
-                "private_source": "",
-            }
-        ]
-    }
+    return [
+        {
+            "type": "bookmark",
+            "bookmark_id": 100003,
+            "url": "https://example.com/new-article",
+            "title": "New Article",
+            "description": "",
+            "time": 1700001000,
+            "progress": 0.0,
+            "progress_timestamp": 0,
+            "starred": "0",
+            "hash": "ghi789",
+            "private_source": "",
+        }
+    ]
 
 
 @pytest.fixture
