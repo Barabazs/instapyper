@@ -233,6 +233,22 @@ class TestHighlight:
         assert highlight.position == 100
         assert highlight.time == 1700002000
         assert highlight.bookmark_id == 100001
+        assert highlight.note == ""
+
+    def test_from_api_with_note(self, highlight_data: dict, mock_client: MagicMock) -> None:
+        highlight_data["note"] = "My annotation"
+        highlight = Highlight.from_api(highlight_data, mock_client)
+
+        assert highlight.note == "My annotation"
+
+    def test_from_api_missing_note(self, highlight_data: dict, mock_client: MagicMock) -> None:
+        highlight = Highlight.from_api(highlight_data, mock_client)
+        assert highlight.note == ""
+
+    def test_from_api_null_note(self, highlight_data: dict, mock_client: MagicMock) -> None:
+        highlight_data["note"] = None
+        highlight = Highlight.from_api(highlight_data, mock_client)
+        assert highlight.note == ""
 
     def test_delete(self, highlight_data: dict, mock_client: MagicMock) -> None:
         mock_client._request.return_value = {}

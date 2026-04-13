@@ -93,6 +93,7 @@ class HighlightBase:
     position: int
     time: int
     bookmark_id: int
+    note: str
 
 
 @dataclass
@@ -110,6 +111,7 @@ class Highlight(HighlightBase):
             position=data.get("position", 0),
             time=data.get("time", 0),
             bookmark_id=data["bookmark_id"],
+            note=data.get("note") or "",
             _client=client,
         )
 
