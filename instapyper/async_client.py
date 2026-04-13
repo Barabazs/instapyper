@@ -22,6 +22,7 @@ from .models import (
     FolderBase,
     HighlightBase,
     User,
+    _parse_tags,
     html_to_text,
 )
 
@@ -98,6 +99,7 @@ class AsyncBookmark(BookmarkBase):
             starred=data.get("starred", "0") == "1",
             hash=data.get("hash", ""),
             private_source=data.get("private_source", ""),
+            tags=_parse_tags(data.get("tags", [])),
             _client=client,
         )
 

@@ -95,6 +95,31 @@ class TestBookmark:
         assert bookmark.description == ""
         assert bookmark.progress == 0.0
         assert bookmark.starred is False
+        assert bookmark.tags == []
+
+    def test_from_api_with_tags(self, bookmark_data: dict, mock_client: MagicMock) -> None:
+        bookmark_data["tags"] = [{"name": "tech"}, {"name": "python"}]
+        bookmark = Bookmark.from_api(bookmark_data, mock_client)
+
+        assert bookmark.tags == ["tech", "python"]
+
+    def test_from_api_with_string_tags(self, bookmark_data: dict, mock_client: MagicMock) -> None:
+        bookmark_data["tags"] = ["tech", "python"]
+        bookmark = Bookmark.from_api(bookmark_data, mock_client)
+
+        assert bookmark.tags == ["tech", "python"]
+
+    def test_from_api_empty_tags(self, bookmark_data: dict, mock_client: MagicMock) -> None:
+        bookmark_data["tags"] = []
+        bookmark = Bookmark.from_api(bookmark_data, mock_client)
+
+        assert bookmark.tags == []
+
+    def test_from_api_null_tags(self, bookmark_data: dict, mock_client: MagicMock) -> None:
+        bookmark_data["tags"] = None
+        bookmark = Bookmark.from_api(bookmark_data, mock_client)
+
+        assert bookmark.tags == []
 
     def test_star(self, bookmark_data: dict, mock_client: MagicMock) -> None:
         mock_client._request.return_value = {"bookmarks": [bookmark_data]}
