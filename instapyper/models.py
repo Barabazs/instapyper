@@ -147,6 +147,8 @@ class FolderBase:
     display_title: str
     sync_to_mobile: bool
     position: int
+    count: int
+    public: bool
 
 
 @dataclass
@@ -165,6 +167,8 @@ class Folder(FolderBase):
             display_title=data.get("display_title", data["title"]),
             sync_to_mobile=data.get("sync_to_mobile", "1") == "1",
             position=data.get("position", 0),
+            count=int(data.get("count") or 0),
+            public=(data.get("public") or 0) != 0,
             _client=client,
         )
 

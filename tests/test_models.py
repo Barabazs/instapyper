@@ -218,6 +218,28 @@ class TestFolder:
         assert folder.display_title == "Tech"
         assert folder.sync_to_mobile is True
         assert folder.position == 0
+        assert folder.count == 0
+        assert folder.public is False
+
+    def test_from_api_with_count_and_public(
+        self, folder_data: dict, mock_client: MagicMock
+    ) -> None:
+        folder_data["count"] = 13
+        folder_data["public"] = 1
+        folder = Folder.from_api(folder_data, mock_client)
+
+        assert folder.count == 13
+        assert folder.public is True
+
+    def test_from_api_null_count_and_public(
+        self, folder_data: dict, mock_client: MagicMock
+    ) -> None:
+        folder_data["count"] = None
+        folder_data["public"] = None
+        folder = Folder.from_api(folder_data, mock_client)
+
+        assert folder.count == 0
+        assert folder.public is False
 
     def test_from_api_sync_disabled(self, folder_data: dict, mock_client: MagicMock) -> None:
         folder_data["sync_to_mobile"] = "0"
