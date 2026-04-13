@@ -14,7 +14,7 @@ from .exceptions import (
     RateLimitError,
     ServerError,
 )
-from .models import Bookmark, Folder, User
+from .models import Bookmark, BookmarksResponse, Folder, Highlight, User
 
 BASE_URL = "https://www.instapaper.com"
 API_VERSION = "api/1.1"
@@ -208,6 +208,25 @@ class Instapaper:
 
     # Bookmark methods
 
+    def _fetch_bookmarks(
+        self,
+        folder: str | int = "unread",
+        limit: int = 25,
+        have: str = "",
+        highlights: str = "",
+        tag: str = "",
+    ) -> dict[str, Any]:
+        """Fetch raw bookmarks/list response."""
+        params: dict[str, Any] = {"folder_id": folder, "limit": min(max(1, limit), 500)}
+        if have:
+            params["have"] = have
+        if highlights:
+            params["highlights"] = highlights
+        if tag:
+            params["tag"] = tag
+
+        return self._request("bookmarks/list", **params)
+
     def get_bookmarks(
         self,
         folder: str | int = "unread",
@@ -228,17 +247,42 @@ class Instapaper:
         Returns:
             List of Bookmark objects.
         """
-        params: dict[str, Any] = {"folder_id": folder, "limit": min(max(1, limit), 500)}
-        if have:
-            params["have"] = have
-        if highlights:
-            params["highlights"] = highlights
-        if tag:
-            params["tag"] = tag
-
-        data = self._request("bookmarks/list", **params)
+        data = self._fetch_bookmarks(folder, limit, have, highlights, tag)
         bookmarks = data.get("bookmarks", [])
         return [Bookmark.from_api(b, self) for b in bookmarks]
+
+    def get_bookmarks_with_highlights(
+        self,
+        folder: str | int = "unread",
+        limit: int = 25,
+        have: str = "",
+        highlights: str = "",
+        tag: str = "",
+    ) -> BookmarksResponse[Bookmark, Highlight]:
+        """Get bookmarks with their inline highlights from a folder.
+
+        The bookmarks/list endpoint returns highlights for all returned
+        bookmarks in a single response. This method exposes both, avoiding
+        the need for per-bookmark highlight requests.
+
+        Args:
+            folder: Folder ID or special name ('unread', 'starred', 'archive').
+            limit: Maximum number of bookmarks to return (1-500).
+            have: Comma-separated list of bookmark_id:hash pairs for de-duplication.
+            highlights: Dash-delimited list of highlight IDs already cached.
+            tag: Filter bookmarks by tag name.
+
+        Returns:
+            BookmarksResponse with .bookmarks and .highlights lists.
+        """
+        data = self._fetch_bookmarks(folder, limit, have, highlights, tag)
+        bookmarks = [Bookmark.from_api(b, self) for b in data.get("bookmarks", [])]
+        highlight_items = [
+            Highlight.from_api(h, self)
+            for h in data.get("highlights", [])
+            if h.get("type") == "highlight"
+        ]
+        return BookmarksResponse(bookmarks=bookmarks, highlights=highlight_items)
 
     def add_bookmark(
         self,

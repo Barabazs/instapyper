@@ -25,7 +25,7 @@ from .exceptions import (
     RateLimitError,
     ServerError,
 )
-from .models import Bookmark, Folder, Highlight, User
+from .models import Bookmark, BookmarksResponse, Folder, Highlight, User
 
 __version__ = "0.0.3"
 
@@ -38,6 +38,7 @@ __all__ = [
     "AsyncFolder",
     # Models
     "Bookmark",
+    "BookmarksResponse",
     "Folder",
     "Highlight",
     "User",

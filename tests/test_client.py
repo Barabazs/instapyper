@@ -124,6 +124,63 @@ class TestBookmarks:
         assert bookmarks[1].starred is True
 
     @responses.activate
+    def test_get_bookmarks_with_highlights(
+        self,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+        bookmarks_response: dict,
+    ) -> None:
+        from instapyper import BookmarksResponse, Highlight
+
+        responses.add(
+            responses.POST,
+            f"{BASE_URL}/bookmarks/list",
+            json=bookmarks_response,
+            status=200,
+        )
+
+        client = Instapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        result = client.get_bookmarks_with_highlights(limit=10)
+
+        assert isinstance(result, BookmarksResponse)
+        assert len(result.bookmarks) == 2
+        assert all(isinstance(b, Bookmark) for b in result.bookmarks)
+        assert result.bookmarks[0].title == "Test Article 1"
+        assert len(result.highlights) == 2
+        assert all(isinstance(h, Highlight) for h in result.highlights)
+        assert result.highlights[0].text == "Inline highlight text"
+        assert result.highlights[0].bookmark_id == 100001
+        assert result.highlights[1].bookmark_id == 100002
+
+    @responses.activate
+    def test_get_bookmarks_with_highlights_empty(
+        self,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+    ) -> None:
+        from instapyper import BookmarksResponse
+
+        responses.add(
+            responses.POST,
+            f"{BASE_URL}/bookmarks/list",
+            json={"bookmarks": [], "user": {"type": "user"}},
+            status=200,
+        )
+
+        client = Instapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        result = client.get_bookmarks_with_highlights()
+
+        assert isinstance(result, BookmarksResponse)
+        assert result.bookmarks == []
+        assert result.highlights == []
+
+    @responses.activate
     def test_add_bookmark(
         self,
         consumer_key: str,
