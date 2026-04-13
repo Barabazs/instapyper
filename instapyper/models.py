@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from functools import cached_property
 from html.parser import HTMLParser
 from re import sub
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
 
 from typing_extensions import Self
 
@@ -67,6 +67,19 @@ def _parse_tags(raw_tags: list[Any] | None) -> list[str]:
         elif isinstance(tag, str) and tag:
             result.append(tag)
     return result
+
+
+B = TypeVar("B", bound="BookmarkBase")
+H = TypeVar("H", bound="HighlightBase")
+
+
+@dataclass
+class BookmarksResponse(Generic[B, H]):
+    """Response from bookmarks/list containing bookmarks and inline highlights."""
+
+    bookmarks: list[B]
+    highlights: list[H]
+
 
 
 class InstapaperClientProtocol(Protocol):

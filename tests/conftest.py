@@ -85,6 +85,24 @@ def bookmarks_response() -> dict:
                 "private_source": "",
             },
         ],
+        "highlights": [
+            {
+                "type": "highlight",
+                "highlight_id": 9001,
+                "text": "Inline highlight text",
+                "position": 100,
+                "time": 1700002000,
+                "bookmark_id": 100001,
+            },
+            {
+                "type": "highlight",
+                "highlight_id": 9002,
+                "text": "Another inline highlight",
+                "position": 200,
+                "time": 1700002100,
+                "bookmark_id": 100002,
+            },
+        ],
         "user": {"type": "user", "user_id": 12345, "username": USERNAME},
     }
 

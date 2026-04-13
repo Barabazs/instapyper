@@ -123,6 +123,35 @@ class TestAsyncBookmarks:
         assert bookmarks[0].title == "Test Article 1"
         assert bookmarks[1].starred is True
 
+    async def test_get_bookmarks_with_highlights(
+        self,
+        httpx_mock: HTTPXMock,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+        bookmarks_response: dict,
+    ) -> None:
+        from instapyper import BookmarksResponse
+        from instapyper.async_client import AsyncHighlight
+
+        httpx_mock.add_response(
+            url=f"{BASE_URL}/bookmarks/list",
+            method="POST",
+            json=bookmarks_response,
+        )
+
+        client = AsyncInstapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        result = await client.get_bookmarks_with_highlights(limit=10)
+
+        assert isinstance(result, BookmarksResponse)
+        assert len(result.bookmarks) == 2
+        assert all(isinstance(b, AsyncBookmark) for b in result.bookmarks)
+        assert len(result.highlights) == 2
+        assert all(isinstance(h, AsyncHighlight) for h in result.highlights)
+        assert result.highlights[0].text == "Inline highlight text"
+
     async def test_add_bookmark(
         self,
         httpx_mock: HTTPXMock,
