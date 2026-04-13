@@ -52,6 +52,23 @@ def html_to_text(html: str | None) -> str | None:
     return parser.get_text()
 
 
+def _parse_tags(raw_tags: list[Any] | None) -> list[str]:
+    """Extract tag names from API tag data.
+
+    Tags come as either dicts with a 'name' key or plain strings. The API
+    may send null instead of omitting the field entirely.
+    """
+    result = []
+    for tag in raw_tags or []:
+        if isinstance(tag, dict):
+            name = tag.get("name", "")
+            if name:
+                result.append(name)
+        elif isinstance(tag, str) and tag:
+            result.append(tag)
+    return result
+
+
 class InstapaperClientProtocol(Protocol):
     """Protocol for Instapaper client methods used by models."""
 
@@ -170,6 +187,7 @@ class BookmarkBase:
     starred: bool
     hash: str
     private_source: str
+    tags: list[str]
 
 
 @dataclass
@@ -193,6 +211,7 @@ class Bookmark(BookmarkBase):
             starred=data.get("starred", "0") == "1",
             hash=data.get("hash", ""),
             private_source=data.get("private_source", ""),
+            tags=_parse_tags(data.get("tags", [])),
             _client=client,
         )
 
