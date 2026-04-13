@@ -44,6 +44,7 @@ class AsyncHighlight(HighlightBase):
             position=data.get("position", 0),
             time=data.get("time", 0),
             bookmark_id=data["bookmark_id"],
+            note=data.get("note") or "",
             _client=client,
         )
 
