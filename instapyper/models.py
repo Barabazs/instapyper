@@ -69,6 +69,11 @@ def _parse_tags(raw_tags: list[Any] | None) -> list[str]:
     return result
 
 
+def _collect_extra(data: dict[str, Any], known_keys: set[str]) -> dict[str, Any]:
+    """Collect API fields not covered by explicit model attributes."""
+    return {k: v for k, v in data.items() if k not in known_keys}
+
+
 B = TypeVar("B", bound="BookmarkBase")
 H = TypeVar("H", bound="HighlightBase")
 
@@ -123,6 +128,7 @@ class HighlightBase:
     time: int
     bookmark_id: int
     note: str
+    extra: dict
 
 
 @dataclass
@@ -130,6 +136,16 @@ class Highlight(HighlightBase):
     """A text highlight within a bookmark (sync client)."""
 
     _client: InstapaperClientProtocol = field(repr=False)
+
+    _KNOWN_KEYS = {
+        "type",
+        "highlight_id",
+        "text",
+        "position",
+        "time",
+        "bookmark_id",
+        "note",
+    }
 
     @classmethod
     def from_api(cls, data: dict[str, Any], client: InstapaperClientProtocol) -> Self:
@@ -141,6 +157,7 @@ class Highlight(HighlightBase):
             time=data.get("time", 0),
             bookmark_id=data["bookmark_id"],
             note=data.get("note") or "",
+            extra=_collect_extra(data, cls._KNOWN_KEYS),
             _client=client,
         )
 
@@ -161,6 +178,7 @@ class FolderBase:
     position: int
     count: int
     public: bool
+    extra: dict
 
 
 @dataclass
@@ -168,6 +186,18 @@ class Folder(FolderBase):
     """An Instapaper folder (sync client)."""
 
     _client: InstapaperClientProtocol = field(repr=False)
+
+    _KNOWN_KEYS = {
+        "type",
+        "folder_id",
+        "title",
+        "slug",
+        "display_title",
+        "sync_to_mobile",
+        "position",
+        "count",
+        "public",
+    }
 
     @classmethod
     def from_api(cls, data: dict[str, Any], client: InstapaperClientProtocol) -> Self:
@@ -181,6 +211,7 @@ class Folder(FolderBase):
             position=data.get("position", 0),
             count=int(data.get("count") or 0),
             public=(data.get("public") or 0) != 0,
+            extra=_collect_extra(data, cls._KNOWN_KEYS),
             _client=client,
         )
 
@@ -204,6 +235,7 @@ class BookmarkBase:
     hash: str
     private_source: str
     tags: list[str]
+    extra: dict
 
 
 @dataclass
@@ -212,6 +244,21 @@ class Bookmark(BookmarkBase):
 
     _client: InstapaperClientProtocol = field(repr=False)
     _html: str | None = field(default=None, repr=False)
+
+    _KNOWN_KEYS = {
+        "type",
+        "bookmark_id",
+        "url",
+        "title",
+        "description",
+        "time",
+        "progress",
+        "progress_timestamp",
+        "starred",
+        "hash",
+        "private_source",
+        "tags",
+    }
 
     @classmethod
     def from_api(cls, data: dict[str, Any], client: InstapaperClientProtocol) -> Self:
@@ -228,6 +275,7 @@ class Bookmark(BookmarkBase):
             hash=data.get("hash", ""),
             private_source=data.get("private_source", ""),
             tags=_parse_tags(data.get("tags", [])),
+            extra=_collect_extra(data, cls._KNOWN_KEYS),
             _client=client,
         )
 

@@ -23,6 +23,7 @@ from .models import (
     FolderBase,
     HighlightBase,
     User,
+    _collect_extra,
     _parse_tags,
     html_to_text,
 )
@@ -37,6 +38,16 @@ class AsyncHighlight(HighlightBase):
 
     _client: AsyncInstapaperClientProtocol = field(repr=False)
 
+    _KNOWN_KEYS = {
+        "type",
+        "highlight_id",
+        "text",
+        "position",
+        "time",
+        "bookmark_id",
+        "note",
+    }
+
     @classmethod
     def from_api(cls, data: dict[str, Any], client: AsyncInstapaperClientProtocol) -> Self:
         """Create AsyncHighlight from API response."""
@@ -47,6 +58,7 @@ class AsyncHighlight(HighlightBase):
             time=data.get("time", 0),
             bookmark_id=data["bookmark_id"],
             note=data.get("note") or "",
+            extra=_collect_extra(data, cls._KNOWN_KEYS),
             _client=client,
         )
 
@@ -61,6 +73,18 @@ class AsyncFolder(FolderBase):
 
     _client: AsyncInstapaperClientProtocol = field(repr=False)
 
+    _KNOWN_KEYS = {
+        "type",
+        "folder_id",
+        "title",
+        "slug",
+        "display_title",
+        "sync_to_mobile",
+        "position",
+        "count",
+        "public",
+    }
+
     @classmethod
     def from_api(cls, data: dict[str, Any], client: AsyncInstapaperClientProtocol) -> Self:
         """Create AsyncFolder from API response."""
@@ -73,6 +97,7 @@ class AsyncFolder(FolderBase):
             position=data.get("position", 0),
             count=int(data.get("count") or 0),
             public=(data.get("public") or 0) != 0,
+            extra=_collect_extra(data, cls._KNOWN_KEYS),
             _client=client,
         )
 
@@ -87,6 +112,21 @@ class AsyncBookmark(BookmarkBase):
 
     _client: AsyncInstapaperClientProtocol = field(repr=False)
     _html: str | None = field(default=None, repr=False)
+
+    _KNOWN_KEYS = {
+        "type",
+        "bookmark_id",
+        "url",
+        "title",
+        "description",
+        "time",
+        "progress",
+        "progress_timestamp",
+        "starred",
+        "hash",
+        "private_source",
+        "tags",
+    }
 
     @classmethod
     def from_api(cls, data: dict[str, Any], client: AsyncInstapaperClientProtocol) -> Self:
@@ -103,6 +143,7 @@ class AsyncBookmark(BookmarkBase):
             hash=data.get("hash", ""),
             private_source=data.get("private_source", ""),
             tags=_parse_tags(data.get("tags", [])),
+            extra=_collect_extra(data, cls._KNOWN_KEYS),
             _client=client,
         )
 
