@@ -306,6 +306,86 @@ class TestHighlight:
         mock_client._request.assert_called_once_with("highlights/9001/delete")
 
 
+class TestExtraFieldsPassthrough:
+    """Tests for extra fields passthrough on all models."""
+
+    @pytest.fixture
+    def mock_client(self) -> MagicMock:
+        return MagicMock()
+
+    def test_bookmark_extra_captures_unknown_fields(self, mock_client: MagicMock) -> None:
+        data = {
+            "bookmark_id": 1,
+            "url": "https://example.com",
+            "some_future_field": "surprise",
+        }
+        bookmark = Bookmark.from_api(data, mock_client)
+        assert bookmark.extra["some_future_field"] == "surprise"
+
+    def test_bookmark_extra_excludes_tags_field(self, mock_client: MagicMock) -> None:
+        """tags is a known field routed to the model, so it never lands in extra."""
+        data = {
+            "bookmark_id": 1,
+            "url": "https://example.com",
+            "tags": [{"name": "tech"}],
+        }
+        bookmark = Bookmark.from_api(data, mock_client)
+        assert "tags" not in bookmark.extra
+
+    def test_bookmark_extra_excludes_known_fields(self, mock_client: MagicMock) -> None:
+        data = {
+            "bookmark_id": 1,
+            "url": "https://example.com",
+            "title": "Test",
+        }
+        bookmark = Bookmark.from_api(data, mock_client)
+        assert "bookmark_id" not in bookmark.extra
+        assert "url" not in bookmark.extra
+        assert "title" not in bookmark.extra
+
+    def test_highlight_extra_excludes_note_field(self, mock_client: MagicMock) -> None:
+        """note is a known field routed to the model, so it never lands in extra."""
+        data = {
+            "highlight_id": 1,
+            "text": "highlighted",
+            "bookmark_id": 100,
+            "note": "my annotation",
+        }
+        highlight = Highlight.from_api(data, mock_client)
+        assert "note" not in highlight.extra
+
+    def test_folder_extra_captures_unknown_fields(self, mock_client: MagicMock) -> None:
+        data = {
+            "folder_id": 1,
+            "title": "Test",
+            "some_future_field": "surprise",
+        }
+        folder = Folder.from_api(data, mock_client)
+        assert folder.extra["some_future_field"] == "surprise"
+
+    def test_folder_extra_excludes_count_and_public(self, mock_client: MagicMock) -> None:
+        """count/public are known fields routed to the model, never landing in extra."""
+        data = {
+            "folder_id": 1,
+            "title": "Test",
+            "count": 42,
+            "public": 0,
+        }
+        folder = Folder.from_api(data, mock_client)
+        assert "count" not in folder.extra
+        assert "public" not in folder.extra
+
+    def test_empty_extra_when_no_unknown_fields(self, mock_client: MagicMock) -> None:
+        data = {
+            "highlight_id": 1,
+            "text": "highlighted",
+            "bookmark_id": 100,
+            "type": "highlight",
+        }
+        highlight = Highlight.from_api(data, mock_client)
+        assert highlight.extra == {}
+
+
 class TestHtmlToText:
     """Tests for HTML to text conversion."""
 
