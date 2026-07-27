@@ -81,7 +81,6 @@ class BookmarksResponse(Generic[B, H]):
     highlights: list[H]
 
 
-
 class InstapaperClientProtocol(Protocol):
     """Protocol for Instapaper client methods used by models."""
 

@@ -15,7 +15,7 @@ Usage (async):
         bookmarks = await client.get_bookmarks(limit=10)
 """
 
-from .async_client import AsyncBookmark, AsyncFolder, AsyncInstapaper
+from .async_client import AsyncBookmark, AsyncFolder, AsyncHighlight, AsyncInstapaper
 from .client import Instapaper
 from .exceptions import (
     AuthenticationError,
@@ -36,6 +36,7 @@ __all__ = [
     "AsyncInstapaper",
     "AsyncBookmark",
     "AsyncFolder",
+    "AsyncHighlight",
     # Models
     "Bookmark",
     "BookmarksResponse",
