@@ -25,7 +25,7 @@ from .exceptions import (
     RateLimitError,
     ServerError,
 )
-from .models import Bookmark, BookmarksResponse, Folder, Highlight, User
+from .models import Bookmark, BookmarksResponse, Folder, Highlight, Tag, User
 
 __version__ = "0.0.3"
 
@@ -42,6 +42,7 @@ __all__ = [
     "BookmarksResponse",
     "Folder",
     "Highlight",
+    "Tag",
     "User",
     # Exceptions
     "InstapaperError",

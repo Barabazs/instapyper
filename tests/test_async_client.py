@@ -1,5 +1,8 @@
 """Tests for the asynchronous Instapaper client."""
 
+import json
+from urllib.parse import parse_qs
+
 import pytest
 from pytest_httpx import HTTPXMock
 
@@ -8,6 +11,7 @@ from instapyper import (
     AuthenticationError,
     BookmarksResponse,
     InstapaperError,
+    Tag,
     User,
 )
 from instapyper.async_client import AsyncBookmark, AsyncFolder, AsyncHighlight
@@ -171,6 +175,31 @@ class TestAsyncBookmarks:
 
         assert isinstance(bookmark, AsyncBookmark)
         assert bookmark.url == "https://example.com/new-article"
+
+    async def test_add_bookmark_serializes_str_and_tag_objects(
+        self,
+        httpx_mock: HTTPXMock,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+        single_bookmark_response: dict,
+    ) -> None:
+        httpx_mock.add_response(
+            url=f"{BASE_URL}/bookmarks/add",
+            method="POST",
+            json=single_bookmark_response,
+        )
+
+        client = AsyncInstapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        await client.add_bookmark(
+            "https://example.com/new-article",
+            tags=["tech", Tag(name="python", id=42, count=3)],
+        )
+
+        body = parse_qs(httpx_mock.get_requests()[-1].read().decode())
+        assert json.loads(body["tags"][0]) == [{"name": "tech"}, {"name": "python"}]
 
     async def test_delete_bookmark(
         self,

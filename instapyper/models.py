@@ -52,20 +52,59 @@ def html_to_text(html: str | None) -> str | None:
     return parser.get_text()
 
 
-def _parse_tags(raw_tags: list[Any] | None) -> list[str]:
-    """Extract tag names from API tag data.
+@dataclass
+class Tag:
+    """An Instapaper tag.
 
-    Tags come as either dicts with a 'name' key or plain strings. The API
-    may send null instead of omitting the field entirely.
+    Only ``name`` is required so tags can be constructed by hand (e.g. for
+    ``add_bookmark``); the remaining fields are server-assigned metadata.
+    """
+
+    name: str
+    id: int = 0
+    slug: str = ""
+    time: float = 0.0
+    count: int = 0
+    hash: str = ""
+    extra: dict = field(default_factory=dict)
+
+    _KNOWN_KEYS = {
+        "id",
+        "name",
+        "slug",
+        "time",
+        "count",
+        "hash",
+    }
+
+    @classmethod
+    def from_api(cls, data: dict[str, Any]) -> Self:
+        """Create Tag from API response."""
+        return cls(
+            name=data.get("name", ""),
+            id=int(data.get("id", 0) or 0),
+            slug=data.get("slug", ""),
+            time=float(data.get("time", 0) or 0),
+            count=int(data.get("count", 0) or 0),
+            hash=data.get("hash", ""),
+            extra=_collect_extra(data, cls._KNOWN_KEYS),
+        )
+
+
+def _parse_tags(raw_tags: list[Any] | None) -> list[Tag]:
+    """Parse API tag data into Tag objects.
+
+    Tags come as either dicts or plain strings. The API may send null
+    instead of omitting the field entirely.
     """
     result = []
     for tag in raw_tags or []:
         if isinstance(tag, dict):
-            name = tag.get("name", "")
-            if name:
-                result.append(name)
+            parsed = Tag.from_api(tag)
+            if parsed.name:
+                result.append(parsed)
         elif isinstance(tag, str) and tag:
-            result.append(tag)
+            result.append(Tag(name=tag))
     return result
 
 
@@ -234,7 +273,7 @@ class BookmarkBase:
     starred: bool
     hash: str
     private_source: str
-    tags: list[str]
+    tags: list[Tag]
     extra: dict
 
 

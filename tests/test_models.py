@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from instapyper import Bookmark, Folder, Highlight, User
+from instapyper import Bookmark, Folder, Highlight, Tag, User
 from instapyper.models import html_to_text
 
 
@@ -42,6 +42,45 @@ class TestUser:
         }
         user = User.from_api(data)
         assert user.subscription_is_active is False
+
+
+class TestTag:
+    """Tests for Tag model."""
+
+    def test_from_api_full(self) -> None:
+        tag = Tag.from_api(
+            {
+                "id": 4031606,
+                "name": "tech",
+                "slug": "tech",
+                "time": 1785143426.5,
+                "count": 3,
+                "hash": "nsRwVT",
+            }
+        )
+        assert tag == Tag(
+            name="tech", id=4031606, slug="tech", time=1785143426.5, count=3, hash="nsRwVT"
+        )
+        assert tag.extra == {}
+
+    def test_from_api_name_only(self) -> None:
+        tag = Tag.from_api({"name": "tech"})
+        assert tag == Tag(name="tech")
+        assert tag.id == 0
+        assert tag.slug == ""
+        assert tag.time == 0.0
+        assert tag.count == 0
+        assert tag.hash == ""
+
+    def test_from_api_unknown_fields_land_in_extra(self) -> None:
+        tag = Tag.from_api({"name": "tech", "color": "red"})
+        assert tag.extra == {"color": "red"}
+
+    def test_from_api_null_numeric_fields(self) -> None:
+        tag = Tag.from_api({"name": "tech", "id": None, "time": None, "count": None})
+        assert tag.id == 0
+        assert tag.time == 0.0
+        assert tag.count == 0
 
 
 class TestBookmark:
@@ -101,13 +140,39 @@ class TestBookmark:
         bookmark_data["tags"] = [{"name": "tech"}, {"name": "python"}]
         bookmark = Bookmark.from_api(bookmark_data, mock_client)
 
-        assert bookmark.tags == ["tech", "python"]
+        assert bookmark.tags == [Tag(name="tech"), Tag(name="python")]
+
+    def test_from_api_with_rich_tags(self, bookmark_data: dict, mock_client: MagicMock) -> None:
+        bookmark_data["tags"] = [
+            {
+                "id": 4031606,
+                "name": "tech",
+                "slug": "tech",
+                "time": 1785143426.5,
+                "count": 3,
+                "hash": "nsRwVT",
+                "color": "red",
+            }
+        ]
+        bookmark = Bookmark.from_api(bookmark_data, mock_client)
+
+        assert bookmark.tags == [
+            Tag(
+                name="tech",
+                id=4031606,
+                slug="tech",
+                time=1785143426.5,
+                count=3,
+                hash="nsRwVT",
+                extra={"color": "red"},
+            )
+        ]
 
     def test_from_api_with_string_tags(self, bookmark_data: dict, mock_client: MagicMock) -> None:
         bookmark_data["tags"] = ["tech", "python"]
         bookmark = Bookmark.from_api(bookmark_data, mock_client)
 
-        assert bookmark.tags == ["tech", "python"]
+        assert bookmark.tags == [Tag(name="tech"), Tag(name="python")]
 
     def test_from_api_empty_tags(self, bookmark_data: dict, mock_client: MagicMock) -> None:
         bookmark_data["tags"] = []

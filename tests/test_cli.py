@@ -8,6 +8,7 @@ import pytest
 from typer.testing import CliRunner
 
 from instapyper.cli import app
+from instapyper.models import Tag
 
 from .conftest import (
     CONSUMER_KEY,
@@ -355,7 +356,7 @@ class TestBookmarksList:
         mock_bookmark.url = "https://example.com"
         mock_bookmark.starred = False
         mock_bookmark.progress = 0.5
-        mock_bookmark.tags = ["tech", "ai"]
+        mock_bookmark.tags = [Tag(name="tech"), Tag(name="ai")]
         mock_client.get_bookmarks.return_value = [mock_bookmark]
         mock_get_client.return_value = mock_client
 
@@ -375,7 +376,7 @@ class TestBookmarksList:
         mock_bookmark.description = "A test"
         mock_bookmark.starred = True
         mock_bookmark.progress = 0.0
-        mock_bookmark.tags = ["tech"]
+        mock_bookmark.tags = [Tag(name="tech", id=42, slug="tech", count=3)]
         mock_bookmark.extra = {"type": "bookmark"}
         mock_client.get_bookmarks.return_value = [mock_bookmark]
         mock_get_client.return_value = mock_client
@@ -385,7 +386,17 @@ class TestBookmarksList:
         data = json.loads(result.stdout)
         assert len(data) == 1
         assert data[0]["bookmark_id"] == 100001
-        assert data[0]["tags"] == ["tech"]
+        assert data[0]["tags"] == [
+            {
+                "name": "tech",
+                "id": 42,
+                "slug": "tech",
+                "time": 0.0,
+                "count": 3,
+                "hash": "",
+                "extra": {},
+            }
+        ]
         assert data[0]["extra"] == {"type": "bookmark"}
 
     @patch("instapyper.cli.get_client")
@@ -397,7 +408,7 @@ class TestBookmarksList:
         mock_bookmark.url = "https://example.com"
         mock_bookmark.starred = False
         mock_bookmark.progress = 0.25
-        mock_bookmark.tags = ["tech", "ai"]
+        mock_bookmark.tags = [Tag(name="tech"), Tag(name="ai")]
         mock_client.get_bookmarks.return_value = [mock_bookmark]
         mock_get_client.return_value = mock_client
 

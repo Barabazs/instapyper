@@ -1,5 +1,8 @@
 """Tests for the synchronous Instapaper client."""
 
+import json
+from urllib.parse import parse_qs
+
 import pytest
 import responses
 
@@ -11,6 +14,7 @@ from instapyper import (
     Highlight,
     Instapaper,
     InstapaperError,
+    Tag,
     User,
 )
 
@@ -200,6 +204,34 @@ class TestBookmarks:
 
         assert isinstance(bookmark, Bookmark)
         assert bookmark.url == "https://example.com/new-article"
+
+    @responses.activate
+    def test_add_bookmark_serializes_str_and_tag_objects(
+        self,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+        single_bookmark_response: dict,
+    ) -> None:
+        responses.add(
+            responses.POST,
+            f"{BASE_URL}/bookmarks/add",
+            json=single_bookmark_response,
+            status=200,
+        )
+
+        client = Instapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        client.add_bookmark(
+            "https://example.com/new-article",
+            tags=["tech", Tag(name="python", id=42, count=3)],
+        )
+
+        raw_body = responses.calls[-1].request.body
+        assert isinstance(raw_body, bytes)
+        body = parse_qs(raw_body.decode())
+        assert json.loads(body["tags"][0]) == [{"name": "tech"}, {"name": "python"}]
 
     @responses.activate
     def test_delete_bookmark(

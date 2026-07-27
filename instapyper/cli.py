@@ -6,6 +6,7 @@ import json
 import os
 import signal
 import sys
+from dataclasses import asdict
 from pathlib import Path
 from typing import Annotated
 
@@ -797,7 +798,7 @@ def bookmarks_list(
                     "description": b.description,
                     "starred": b.starred,
                     "progress": b.progress,
-                    "tags": b.tags,
+                    "tags": [asdict(t) for t in b.tags],
                     "extra": b.extra,
                 }
                 for b in bookmarks
@@ -809,7 +810,7 @@ def bookmarks_list(
             # Tab-separated: ID, title, url, starred, progress, tags
             for b in bookmarks:
                 starred = "1" if b.starred else "0"
-                tags = ",".join(b.tags)
+                tags = ",".join(t.name for t in b.tags)
                 print(f"{b.bookmark_id}\t{b.title}\t{b.url}\t{starred}\t{b.progress}\t{tags}")
             return
 
@@ -829,7 +830,7 @@ def bookmarks_list(
             star = "★" if b.starred else ""
             progress = f"{b.progress:.0%}" if b.progress > 0 else ""
             title = b.title[:50] + "..." if len(b.title) > 50 else b.title
-            tags = ",".join(b.tags)
+            tags = ",".join(t.name for t in b.tags)
             tags = tags[:30] + "..." if len(tags) > 30 else tags
             table.add_row(str(b.bookmark_id), title, star, progress, tags)
 

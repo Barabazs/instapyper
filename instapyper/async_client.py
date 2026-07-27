@@ -22,6 +22,7 @@ from .models import (
     BookmarksResponse,
     FolderBase,
     HighlightBase,
+    Tag,
     User,
     _collect_extra,
     _parse_tags,
@@ -517,7 +518,7 @@ class AsyncInstapaper:
         is_private_from_source: bool = False,
         resolve_final_url: bool = True,
         archived: bool = False,
-        tags: list[str] | None = None,
+        tags: list[str | Tag] | None = None,
     ) -> AsyncBookmark:
         """Add a new bookmark.
 
@@ -530,7 +531,7 @@ class AsyncInstapaper:
             is_private_from_source: Whether the content is from a private source.
             resolve_final_url: Whether to resolve redirects (default True).
             archived: Whether to archive immediately after adding.
-            tags: List of tag names to apply.
+            tags: Tag names (or Tag objects) to apply.
 
         Returns:
             The created AsyncBookmark object.
@@ -553,7 +554,9 @@ class AsyncInstapaper:
         if tags:
             import json
 
-            params["tags"] = json.dumps([{"name": t} for t in tags])
+            params["tags"] = json.dumps(
+                [{"name": t.name if isinstance(t, Tag) else t} for t in tags]
+            )
 
         data = await self._request("bookmarks/add", **params)
         items = data.get("items", [])

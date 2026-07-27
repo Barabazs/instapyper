@@ -24,7 +24,7 @@ from instapyper import (
     Folder,
     Highlight,
 )
-from instapyper.models import BookmarkBase, FolderBase, HighlightBase
+from instapyper.models import BookmarkBase, FolderBase, HighlightBase, Tag
 
 FULL_HIGHLIGHT = {
     "type": "highlight",
@@ -61,7 +61,14 @@ FULL_BOOKMARK = {
     "hash": "0zQk353o",
     "private_source": "",
     "tags": [
-        {"id": 4031606, "name": "tech", "slug": "tech", "count": 1, "hash": "nsRwVT"},
+        {
+            "id": 4031606,
+            "name": "tech",
+            "slug": "tech",
+            "time": 1785143426.5,
+            "count": 1,
+            "hash": "nsRwVT",
+        },
     ],
 }
 
@@ -264,7 +271,9 @@ class TestBookmarkBehavior:
         assert b.progress_timestamp == 1785143500
         assert b.starred is True
         assert b.hash == "0zQk353o"
-        assert b.tags == ["tech"]
+        assert b.tags == [
+            Tag(name="tech", id=4031606, slug="tech", time=1785143426.5, count=1, hash="nsRwVT")
+        ]
         assert b.extra == {}
 
     @pytest.mark.parametrize("cls", BOOKMARK_CLASSES)

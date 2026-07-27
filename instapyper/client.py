@@ -14,7 +14,7 @@ from .exceptions import (
     RateLimitError,
     ServerError,
 )
-from .models import Bookmark, BookmarksResponse, Folder, Highlight, User
+from .models import Bookmark, BookmarksResponse, Folder, Highlight, Tag, User
 
 BASE_URL = "https://www.instapaper.com"
 API_VERSION = "api/1.1"
@@ -294,7 +294,7 @@ class Instapaper:
         is_private_from_source: bool = False,
         resolve_final_url: bool = True,
         archived: bool = False,
-        tags: list[str] | None = None,
+        tags: list[str | Tag] | None = None,
     ) -> Bookmark:
         """Add a new bookmark.
 
@@ -307,7 +307,7 @@ class Instapaper:
             is_private_from_source: Whether the content is from a private source.
             resolve_final_url: Whether to resolve redirects (default True).
             archived: Whether to archive immediately after adding.
-            tags: List of tag names to apply.
+            tags: Tag names (or Tag objects) to apply.
 
         Returns:
             The created Bookmark object.
@@ -330,7 +330,9 @@ class Instapaper:
         if tags:
             import json
 
-            params["tags"] = json.dumps([{"name": t} for t in tags])
+            params["tags"] = json.dumps(
+                [{"name": t.name if isinstance(t, Tag) else t} for t in tags]
+            )
 
         data = self._request("bookmarks/add", **params)
         items = data.get("items", [])
