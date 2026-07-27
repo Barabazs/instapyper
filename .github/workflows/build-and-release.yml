@@ -35,6 +35,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Publish package to PyPi
-        run: uv publish
+        # Token auth until a GitHub trusted publisher is configured on PyPI.
+        run: uv publish # zizmor: ignore[use-trusted-publishing]
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
