@@ -6,10 +6,11 @@ from pytest_httpx import HTTPXMock
 from instapyper import (
     AsyncInstapaper,
     AuthenticationError,
+    BookmarksResponse,
     InstapaperError,
     User,
 )
-from instapyper.async_client import AsyncBookmark, AsyncFolder
+from instapyper.async_client import AsyncBookmark, AsyncFolder, AsyncHighlight
 
 from .conftest import BASE_URL, CONSUMER_KEY, CONSUMER_SECRET, PASSWORD, USERNAME
 
@@ -132,9 +133,6 @@ class TestAsyncBookmarks:
         oauth_token_secret: str,
         bookmarks_response: dict,
     ) -> None:
-        from instapyper import BookmarksResponse
-        from instapyper.async_client import AsyncHighlight
-
         httpx_mock.add_response(
             url=f"{BASE_URL}/bookmarks/list",
             method="POST",

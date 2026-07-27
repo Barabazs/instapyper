@@ -6,7 +6,9 @@ import responses
 from instapyper import (
     AuthenticationError,
     Bookmark,
+    BookmarksResponse,
     Folder,
+    Highlight,
     Instapaper,
     InstapaperError,
     User,
@@ -132,8 +134,6 @@ class TestBookmarks:
         oauth_token_secret: str,
         bookmarks_response: dict,
     ) -> None:
-        from instapyper import BookmarksResponse, Highlight
-
         responses.add(
             responses.POST,
             f"{BASE_URL}/bookmarks/list",
@@ -163,8 +163,6 @@ class TestBookmarks:
         oauth_token: str,
         oauth_token_secret: str,
     ) -> None:
-        from instapyper import BookmarksResponse
-
         responses.add(
             responses.POST,
             f"{BASE_URL}/bookmarks/list",
