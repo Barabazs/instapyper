@@ -122,13 +122,26 @@ class TestBookmark:
         assert bookmark.tags == []
 
     def test_star(self, bookmark_data: dict, mock_client: MagicMock) -> None:
-        mock_client._request.return_value = {"bookmarks": [bookmark_data]}
-        bookmark = Bookmark.from_api(bookmark_data, mock_client)
+        mock_client._request.return_value = {
+            "items": [{**bookmark_data, "type": "bookmark", "starred": "1"}]
+        }
+        bookmark = Bookmark.from_api({**bookmark_data, "starred": "0"}, mock_client)
 
         result = bookmark.star()
 
         mock_client._request.assert_called_once_with("bookmarks/star", bookmark_id=100001)
         assert isinstance(result, Bookmark)
+        assert result is not bookmark
+        assert result.starred is True
+
+    def test_star_fallback_without_items(self, bookmark_data: dict, mock_client: MagicMock) -> None:
+        mock_client._request.return_value = {}
+        bookmark = Bookmark.from_api({**bookmark_data, "starred": "0"}, mock_client)
+
+        result = bookmark.star()
+
+        assert result is bookmark
+        assert bookmark.starred is True
 
     def test_delete(self, bookmark_data: dict, mock_client: MagicMock) -> None:
         mock_client._request.return_value = {}
@@ -139,7 +152,9 @@ class TestBookmark:
         mock_client._request.assert_called_once_with("bookmarks/delete", bookmark_id=100001)
 
     def test_move(self, bookmark_data: dict, mock_client: MagicMock) -> None:
-        mock_client._request.return_value = {"bookmarks": [bookmark_data]}
+        mock_client._request.return_value = {
+            "items": [{**bookmark_data, "type": "bookmark", "title": "Moved"}]
+        }
         bookmark = Bookmark.from_api(bookmark_data, mock_client)
 
         result = bookmark.move(5001)
@@ -148,9 +163,13 @@ class TestBookmark:
             "bookmarks/move", bookmark_id=100001, folder_id=5001
         )
         assert isinstance(result, Bookmark)
+        assert result is not bookmark
+        assert result.title == "Moved"
 
     def test_update_progress(self, bookmark_data: dict, mock_client: MagicMock) -> None:
-        mock_client._request.return_value = {"bookmarks": [bookmark_data]}
+        mock_client._request.return_value = {
+            "items": [{**bookmark_data, "type": "bookmark", "progress": 0.75}]
+        }
         bookmark = Bookmark.from_api(bookmark_data, mock_client)
 
         result = bookmark.update_progress(0.75)
@@ -161,6 +180,8 @@ class TestBookmark:
         assert call_args[1]["bookmark_id"] == 100001
         assert call_args[1]["progress"] == 0.75
         assert isinstance(result, Bookmark)
+        assert result is not bookmark
+        assert result.progress == 0.75
 
     def test_update_progress_invalid(self, bookmark_data: dict, mock_client: MagicMock) -> None:
         bookmark = Bookmark.from_api(bookmark_data, mock_client)
