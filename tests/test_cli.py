@@ -355,6 +355,7 @@ class TestBookmarksList:
         mock_bookmark.url = "https://example.com"
         mock_bookmark.starred = False
         mock_bookmark.progress = 0.5
+        mock_bookmark.tags = ["tech", "ai"]
         mock_client.get_bookmarks.return_value = [mock_bookmark]
         mock_get_client.return_value = mock_client
 
@@ -362,6 +363,7 @@ class TestBookmarksList:
         assert result.exit_code == 0
         assert "100001" in result.stdout
         assert "Test Article" in result.stdout
+        assert "tech,ai" in result.stdout
 
     @patch("instapyper.cli.get_client")
     def test_list_json_output(self, mock_get_client: MagicMock) -> None:
@@ -373,6 +375,8 @@ class TestBookmarksList:
         mock_bookmark.description = "A test"
         mock_bookmark.starred = True
         mock_bookmark.progress = 0.0
+        mock_bookmark.tags = ["tech"]
+        mock_bookmark.extra = {"type": "bookmark"}
         mock_client.get_bookmarks.return_value = [mock_bookmark]
         mock_get_client.return_value = mock_client
 
@@ -381,6 +385,8 @@ class TestBookmarksList:
         data = json.loads(result.stdout)
         assert len(data) == 1
         assert data[0]["bookmark_id"] == 100001
+        assert data[0]["tags"] == ["tech"]
+        assert data[0]["extra"] == {"type": "bookmark"}
 
     @patch("instapyper.cli.get_client")
     def test_list_plain_output(self, mock_get_client: MagicMock) -> None:
@@ -391,6 +397,7 @@ class TestBookmarksList:
         mock_bookmark.url = "https://example.com"
         mock_bookmark.starred = False
         mock_bookmark.progress = 0.25
+        mock_bookmark.tags = ["tech", "ai"]
         mock_client.get_bookmarks.return_value = [mock_bookmark]
         mock_get_client.return_value = mock_client
 
@@ -398,6 +405,7 @@ class TestBookmarksList:
         assert result.exit_code == 0
         assert "100001\t" in result.stdout
         assert "https://example.com" in result.stdout
+        assert "\ttech,ai" in result.stdout
 
 
 class TestBookmarksAdd:
@@ -631,6 +639,8 @@ class TestFoldersList:
         mock_folder.title = "Tech"
         mock_folder.slug = "tech"
         mock_folder.position = 0
+        mock_folder.count = 42
+        mock_folder.public = True
         mock_client.get_folders.return_value = [mock_folder]
         mock_get_client.return_value = mock_client
 
@@ -638,6 +648,8 @@ class TestFoldersList:
         assert result.exit_code == 0
         assert "5001" in result.stdout
         assert "Tech" in result.stdout
+        assert "42" in result.stdout
+        assert "✓" in result.stdout
 
     @patch("instapyper.cli.get_client")
     def test_list_json_output(self, mock_get_client: MagicMock) -> None:
@@ -647,6 +659,9 @@ class TestFoldersList:
         mock_folder.title = "Tech"
         mock_folder.slug = "tech"
         mock_folder.position = 0
+        mock_folder.count = 42
+        mock_folder.public = False
+        mock_folder.extra = {"type": "folder"}
         mock_client.get_folders.return_value = [mock_folder]
         mock_get_client.return_value = mock_client
 
@@ -655,6 +670,26 @@ class TestFoldersList:
         data = json.loads(result.stdout)
         assert len(data) == 1
         assert data[0]["folder_id"] == 5001
+        assert data[0]["count"] == 42
+        assert data[0]["public"] is False
+        assert data[0]["extra"] == {"type": "folder"}
+
+    @patch("instapyper.cli.get_client")
+    def test_list_plain_output(self, mock_get_client: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_folder = MagicMock()
+        mock_folder.folder_id = 5001
+        mock_folder.title = "Tech"
+        mock_folder.slug = "tech"
+        mock_folder.position = 0
+        mock_folder.count = 42
+        mock_folder.public = True
+        mock_client.get_folders.return_value = [mock_folder]
+        mock_get_client.return_value = mock_client
+
+        result = runner.invoke(app, ["folders", "list", "--plain"])
+        assert result.exit_code == 0
+        assert "5001\tTech\ttech\t0\t42\t1" in result.stdout
 
 
 class TestFoldersCreate:
@@ -746,6 +781,67 @@ class TestResolveFolderHelper:
 
         with pytest.raises(Exit):
             _resolve_folder(mock_client, "NonExistent")
+
+
+class TestHighlightsList:
+    """Tests for highlights list command."""
+
+    def _mock_client_with_highlight(self, highlight: MagicMock | None) -> MagicMock:
+        mock_client = MagicMock()
+        mock_bookmark = MagicMock()
+        mock_bookmark.bookmark_id = 100001
+        mock_bookmark.get_highlights.return_value = [highlight] if highlight else []
+        mock_client.get_bookmarks.return_value = [mock_bookmark]
+        return mock_client
+
+    def _mock_highlight(self) -> MagicMock:
+        mock_highlight = MagicMock()
+        mock_highlight.highlight_id = 7001
+        mock_highlight.text = "Important quote"
+        mock_highlight.position = 3
+        mock_highlight.note = "my note"
+        mock_highlight.extra = {"type": "highlight"}
+        return mock_highlight
+
+    @patch("instapyper.cli.get_client")
+    def test_list_empty(self, mock_get_client: MagicMock) -> None:
+        mock_get_client.return_value = self._mock_client_with_highlight(None)
+
+        result = runner.invoke(app, ["highlights", "list", "100001"])
+        assert result.exit_code == 0
+        assert "No highlights found" in result.stdout
+
+    @patch("instapyper.cli.get_client")
+    def test_list_with_highlights(self, mock_get_client: MagicMock) -> None:
+        mock_get_client.return_value = self._mock_client_with_highlight(self._mock_highlight())
+
+        result = runner.invoke(app, ["highlights", "list", "100001"])
+        assert result.exit_code == 0
+        assert "7001" in result.stdout
+        assert "Important quote" in result.stdout
+        assert "my note" in result.stdout
+
+    @patch("instapyper.cli.get_client")
+    def test_list_json_output(self, mock_get_client: MagicMock) -> None:
+        mock_get_client.return_value = self._mock_client_with_highlight(self._mock_highlight())
+
+        result = runner.invoke(app, ["highlights", "list", "100001", "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.stdout)
+        assert len(data) == 1
+        assert data[0]["highlight_id"] == 7001
+        assert data[0]["note"] == "my note"
+        assert data[0]["extra"] == {"type": "highlight"}
+
+    @patch("instapyper.cli.get_client")
+    def test_list_plain_output(self, mock_get_client: MagicMock) -> None:
+        highlight = self._mock_highlight()
+        highlight.note = "line one\nline two"
+        mock_get_client.return_value = self._mock_client_with_highlight(highlight)
+
+        result = runner.invoke(app, ["highlights", "list", "100001", "--plain"])
+        assert result.exit_code == 0
+        assert "7001\tImportant quote\t3\tline one line two" in result.stdout
 
 
 class TestGlobalFlags:

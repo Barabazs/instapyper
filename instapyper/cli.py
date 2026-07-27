@@ -797,6 +797,8 @@ def bookmarks_list(
                     "description": b.description,
                     "starred": b.starred,
                     "progress": b.progress,
+                    "tags": b.tags,
+                    "extra": b.extra,
                 }
                 for b in bookmarks
             ]
@@ -804,10 +806,11 @@ def bookmarks_list(
             return
 
         if plain_output:
-            # Tab-separated: ID, title, url, starred, progress
+            # Tab-separated: ID, title, url, starred, progress, tags
             for b in bookmarks:
                 starred = "1" if b.starred else "0"
-                print(f"{b.bookmark_id}\t{b.title}\t{b.url}\t{starred}\t{b.progress}")
+                tags = ",".join(b.tags)
+                print(f"{b.bookmark_id}\t{b.title}\t{b.url}\t{starred}\t{b.progress}\t{tags}")
             return
 
         if not bookmarks:
@@ -820,12 +823,15 @@ def bookmarks_list(
         table.add_column("Title", style="white", max_width=50)
         table.add_column("★", style="yellow", justify="center")
         table.add_column("Progress", justify="right")
+        table.add_column("Tags", style="dim", max_width=30)
 
         for b in bookmarks:
             star = "★" if b.starred else ""
             progress = f"{b.progress:.0%}" if b.progress > 0 else ""
             title = b.title[:50] + "..." if len(b.title) > 50 else b.title
-            table.add_row(str(b.bookmark_id), title, star, progress)
+            tags = ",".join(b.tags)
+            tags = tags[:30] + "..." if len(tags) > 30 else tags
+            table.add_row(str(b.bookmark_id), title, star, progress, tags)
 
         print_with_pager(table, len(bookmarks))
 
@@ -1174,6 +1180,9 @@ def folders_list(
                     "title": f.title,
                     "slug": f.slug,
                     "position": f.position,
+                    "count": f.count,
+                    "public": f.public,
+                    "extra": f.extra,
                 }
                 for f in folders
             ]
@@ -1181,9 +1190,10 @@ def folders_list(
             return
 
         if plain_output:
-            # Tab-separated: ID, title, slug, position
+            # Tab-separated: ID, title, slug, position, count, public
             for f in folders:
-                print(f"{f.folder_id}\t{f.title}\t{f.slug}\t{f.position}")
+                public = "1" if f.public else "0"
+                print(f"{f.folder_id}\t{f.title}\t{f.slug}\t{f.position}\t{f.count}\t{public}")
             return
 
         if not folders:
@@ -1194,9 +1204,12 @@ def folders_list(
         table.add_column("ID", style="cyan", no_wrap=True)
         table.add_column("Title", style="white")
         table.add_column("Slug", style="dim")
+        table.add_column("Count", justify="right")
+        table.add_column("Public", justify="center")
 
         for f in folders:
-            table.add_row(str(f.folder_id), f.title, f.slug)
+            public = "✓" if f.public else ""
+            table.add_row(str(f.folder_id), f.title, f.slug, str(f.count), public)
 
         console.print(table)
 
@@ -1364,6 +1377,8 @@ def highlights_list(
                     "highlight_id": h.highlight_id,
                     "text": h.text,
                     "position": h.position,
+                    "note": h.note,
+                    "extra": h.extra,
                 }
                 for h in highlights
             ]
@@ -1371,11 +1386,12 @@ def highlights_list(
             return
 
         if plain_output:
-            # Tab-separated: ID, text, position
+            # Tab-separated: ID, text, position, note
             for h in highlights:
                 # Replace tabs/newlines in text to avoid breaking TSV format
                 text = h.text.replace("\t", " ").replace("\n", " ")
-                print(f"{h.highlight_id}\t{text}\t{h.position}")
+                note = h.note.replace("\t", " ").replace("\n", " ")
+                print(f"{h.highlight_id}\t{text}\t{h.position}\t{note}")
             return
 
         if not highlights:
@@ -1386,10 +1402,12 @@ def highlights_list(
         table.add_column("ID", style="cyan", no_wrap=True)
         table.add_column("Text", style="white", max_width=60)
         table.add_column("Position", justify="right")
+        table.add_column("Note", style="dim", max_width=40)
 
         for h in highlights:
             text = h.text[:60] + "..." if len(h.text) > 60 else h.text
-            table.add_row(str(h.highlight_id), text, str(h.position))
+            note = h.note[:40] + "..." if len(h.note) > 40 else h.note
+            table.add_row(str(h.highlight_id), text, str(h.position), note)
 
         print_with_pager(table, len(highlights))
 
