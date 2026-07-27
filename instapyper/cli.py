@@ -441,7 +441,7 @@ def get_client(require_auth: bool = True) -> Instapaper:
 def _find_bookmark(
     client: Instapaper,
     bookmark_id: int,
-    folder: str = "unread",
+    folder: str | int = "unread",
     status_msg: str = "Fetching bookmarks...",
 ) -> Bookmark:
     """Find a bookmark by ID, fetching from specified folder.
@@ -452,7 +452,7 @@ def _find_bookmark(
     Args:
         client: Authenticated Instapaper client
         bookmark_id: The bookmark ID to find
-        folder: Folder to search in (default "unread")
+        folder: Folder ID or builtin name ('unread', 'starred', 'archive')
         status_msg: Status message to show during fetch
 
     Returns:
@@ -1353,12 +1353,16 @@ def folders_order(
 
 Examples:
   instapyper highlights list 12345
+  instapyper highlights list 12345 --folder starred
   instapyper highlights list 12345 --json
   instapyper highlights list 12345 --plain | cut -f2  # just text
 """,
 )
 def highlights_list(
     bookmark_id: Annotated[int, typer.Argument(help="Bookmark ID")],
+    folder: Annotated[
+        str, typer.Option("--folder", "-F", help="Folder name or ID to search")
+    ] = "unread",
     json_output: Annotated[bool, typer.Option("--json", "-j", help="Output as JSON")] = False,
     plain_output: Annotated[
         bool, typer.Option("--plain", "-p", help="Plain tab-separated output")
@@ -1367,7 +1371,12 @@ def highlights_list(
     """List highlights for a bookmark."""
     client = get_client()
     try:
-        bookmark = _find_bookmark(client, bookmark_id)
+        search_folder: str | int = (
+            folder
+            if folder in ("unread", "starred", "archive")
+            else _resolve_folder(client, folder)
+        )
+        bookmark = _find_bookmark(client, bookmark_id, folder=search_folder)
         highlights = bookmark.get_highlights()
 
         use_json = json_output

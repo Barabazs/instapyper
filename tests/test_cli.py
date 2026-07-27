@@ -854,6 +854,50 @@ class TestHighlightsList:
         assert result.exit_code == 0
         assert "7001\tImportant quote\t3\tline one line two" in result.stdout
 
+    @patch("instapyper.cli.get_client")
+    def test_list_default_folder_unread(self, mock_get_client: MagicMock) -> None:
+        mock_client = self._mock_client_with_highlight(self._mock_highlight())
+        mock_get_client.return_value = mock_client
+
+        result = runner.invoke(app, ["highlights", "list", "100001"])
+        assert result.exit_code == 0
+        mock_client.get_bookmarks.assert_called_once_with(folder="unread", limit=500)
+
+    @patch("instapyper.cli.get_client")
+    def test_list_builtin_folder(self, mock_get_client: MagicMock) -> None:
+        mock_client = self._mock_client_with_highlight(self._mock_highlight())
+        mock_get_client.return_value = mock_client
+
+        result = runner.invoke(app, ["highlights", "list", "100001", "--folder", "starred"])
+        assert result.exit_code == 0
+        mock_client.get_bookmarks.assert_called_once_with(folder="starred", limit=500)
+        mock_client.get_folders.assert_not_called()
+
+    @patch("instapyper.cli._resolve_folder")
+    @patch("instapyper.cli.get_client")
+    def test_list_custom_folder_resolved(
+        self, mock_get_client: MagicMock, mock_resolve: MagicMock
+    ) -> None:
+        mock_client = self._mock_client_with_highlight(self._mock_highlight())
+        mock_get_client.return_value = mock_client
+        mock_resolve.return_value = 5001
+
+        result = runner.invoke(app, ["highlights", "list", "100001", "-F", "Tech"])
+        assert result.exit_code == 0
+        mock_resolve.assert_called_once_with(mock_client, "Tech")
+        mock_client.get_bookmarks.assert_called_once_with(folder=5001, limit=500)
+
+    @patch("instapyper.cli.get_client")
+    def test_list_not_found_in_folder(self, mock_get_client: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_client.get_bookmarks.return_value = []
+        mock_get_client.return_value = mock_client
+
+        result = runner.invoke(app, ["highlights", "list", "100001", "--folder", "starred"])
+        assert result.exit_code == 1
+        output = result.stdout + (result.stderr or "")
+        assert "not found in starred" in output
+
 
 class TestGlobalFlags:
     """Tests for global flags."""
