@@ -4,17 +4,24 @@ on:
   release:
     types: [published]
 
+permissions: {}
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # upload wheel to the GitHub release
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
         with:
           python-version-file: .python-version
+          enable-cache: false # release artifacts must not be cache-poisonable
 
       - name: Check if lockfile is up to date
         run: uv lock --check
@@ -22,10 +29,10 @@ jobs:
       - name: Build package
         run: uv build
 
-      - name: Release to Github
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/*.whl
+      - name: Upload wheel to GitHub release
+        run: gh release upload "$GITHUB_REF_NAME" dist/*.whl
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Publish package to PyPi
         run: uv publish

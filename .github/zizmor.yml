@@ -1,0 +1,7 @@
+# zizmor configuration — https://docs.zizmor.sh/configuration/
+rules:
+  use-trusted-publishing:
+    # uv publish authenticates with a PyPI API token for now; switching to
+    # trusted publishing requires configuring a GitHub publisher on PyPI first.
+    ignore:
+      - build-and-release.yml
