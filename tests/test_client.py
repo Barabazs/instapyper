@@ -270,7 +270,7 @@ class TestFolders:
                 "title": "New Folder",
                 "slug": "new-folder",
                 "display_title": "New Folder",
-                "sync_to_mobile": "1",
+                "sync_to_mobile": 1,
                 "position": 2,
             }
         ]

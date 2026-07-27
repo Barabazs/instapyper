@@ -205,7 +205,7 @@ class TestFolder:
             "title": "Tech",
             "slug": "tech",
             "display_title": "Tech",
-            "sync_to_mobile": "1",
+            "sync_to_mobile": 1,
             "position": 0,
         }
 
@@ -242,7 +242,19 @@ class TestFolder:
         assert folder.public is False
 
     def test_from_api_sync_disabled(self, folder_data: dict, mock_client: MagicMock) -> None:
-        folder_data["sync_to_mobile"] = "0"
+        folder_data["sync_to_mobile"] = 0
+        folder = Folder.from_api(folder_data, mock_client)
+        assert folder.sync_to_mobile is False
+
+    def test_from_api_sync_missing_defaults_enabled(
+        self, folder_data: dict, mock_client: MagicMock
+    ) -> None:
+        del folder_data["sync_to_mobile"]
+        folder = Folder.from_api(folder_data, mock_client)
+        assert folder.sync_to_mobile is True
+
+    def test_from_api_sync_null(self, folder_data: dict, mock_client: MagicMock) -> None:
+        folder_data["sync_to_mobile"] = None
         folder = Folder.from_api(folder_data, mock_client)
         assert folder.sync_to_mobile is False
 

@@ -137,7 +137,7 @@ def folders_response() -> list[dict]:
             "title": "Tech",
             "slug": "tech",
             "display_title": "Tech",
-            "sync_to_mobile": "1",
+            "sync_to_mobile": 1,
             "position": 0,
         },
         {
@@ -146,7 +146,7 @@ def folders_response() -> list[dict]:
             "title": "News",
             "slug": "news",
             "display_title": "News",
-            "sync_to_mobile": "1",
+            "sync_to_mobile": 1,
             "position": 1,
         },
     ]
