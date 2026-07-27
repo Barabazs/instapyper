@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write # upload wheel to the GitHub release
+      id-token: write # OIDC token for PyPI trusted publishing
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -35,7 +36,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Publish package to PyPi
-        # Token auth until a GitHub trusted publisher is configured on PyPI.
-        run: uv publish # zizmor: ignore[use-trusted-publishing]
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: uv publish --trusted-publishing always
