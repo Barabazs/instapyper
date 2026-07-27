@@ -195,6 +195,23 @@ class AsyncBookmark(BookmarkBase):
         """Delete this bookmark."""
         await self._client._request("bookmarks/delete", bookmark_id=self.bookmark_id)
 
+    async def update_progress(self, progress: float) -> Self:
+        """Update reading progress (0.0 to 1.0)."""
+        if not 0.0 <= progress <= 1.0:
+            raise ValueError("Progress must be between 0.0 and 1.0")
+        data = await self._client._request(
+            "bookmarks/update_read_progress",
+            bookmark_id=self.bookmark_id,
+            progress=progress,
+            progress_timestamp=int(time.time()),
+        )
+        for item in data.get("items", []):
+            if isinstance(item, dict) and item.get("type") == "bookmark":
+                return type(self).from_api(item, self._client)
+        self.progress = progress
+        self.progress_timestamp = int(time.time())
+        return self
+
     async def get_html(self) -> str:
         """Get the processed HTML content of the bookmark."""
         if self._html is None:
