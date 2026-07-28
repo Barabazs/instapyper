@@ -22,8 +22,9 @@ except ImportError:
     sys.exit(1)
 
 from . import __version__
-from .client import Bookmark, Instapaper
+from .client import Instapaper
 from .exceptions import AuthenticationError, InstapaperError
+from .models import html_to_text
 
 
 def _handle_sigint(signum: int, frame: object) -> None:
@@ -436,43 +437,6 @@ def get_client(require_auth: bool = True) -> Instapaper:
         client.login_with_token(oauth_token, oauth_token_secret)
 
     return client
-
-
-def _find_bookmark(
-    client: Instapaper,
-    bookmark_id: int,
-    folder: str | int = "unread",
-    status_msg: str = "Fetching bookmarks...",
-) -> Bookmark:
-    """Find a bookmark by ID, fetching from specified folder.
-
-    Note: Instapaper API does not support single-bookmark lookup, so we must
-    fetch and filter. For repeated operations, consider caching the result.
-
-    Args:
-        client: Authenticated Instapaper client
-        bookmark_id: The bookmark ID to find
-        folder: Folder ID or builtin name ('unread', 'starred', 'archive')
-        status_msg: Status message to show during fetch
-
-    Returns:
-        The Bookmark object if found
-
-    Raises:
-        typer.Exit: If bookmark not found
-    """
-
-    with err_console.status(status_msg):
-        bookmarks = client.get_bookmarks(folder=folder, limit=500)
-    bookmark = next((b for b in bookmarks if b.bookmark_id == bookmark_id), None)
-    if not bookmark:
-        folder_hint = f" --folder {folder}" if folder != "unread" else ""
-        error_with_hint(
-            f"Bookmark {bookmark_id} not found in {folder}",
-            f"Check bookmark ID with 'instapyper bookmarks list{folder_hint}'",
-        )
-        raise typer.Exit(1) from None
-    return bookmark
 
 
 def _resolve_folder(client: Instapaper, folder_str: str) -> int:
@@ -1137,13 +1101,14 @@ def bookmarks_text(
     """Get the text content of a bookmark."""
     client = get_client()
     try:
-        bookmark = _find_bookmark(client, bookmark_id)
+        with err_console.status("Fetching text..."):
+            content = client.get_bookmark_text(bookmark_id)
         if html:
-            console.print(bookmark.html)
+            console.print(content)
         else:
-            console.print(bookmark.text)
+            console.print(html_to_text(content) or "")
     except InstapaperError as e:
-        handle_error(e)
+        handle_error(e, "Check bookmark ID with 'instapyper bookmarks list'")
         raise typer.Exit(1) from None
 
 
@@ -1353,16 +1318,12 @@ def folders_order(
 
 Examples:
   instapyper highlights list 12345
-  instapyper highlights list 12345 --folder starred
   instapyper highlights list 12345 --json
   instapyper highlights list 12345 --plain | cut -f2  # just text
 """,
 )
 def highlights_list(
     bookmark_id: Annotated[int, typer.Argument(help="Bookmark ID")],
-    folder: Annotated[
-        str, typer.Option("--folder", "-F", help="Folder name or ID to search")
-    ] = "unread",
     json_output: Annotated[bool, typer.Option("--json", "-j", help="Output as JSON")] = False,
     plain_output: Annotated[
         bool, typer.Option("--plain", "-p", help="Plain tab-separated output")
@@ -1371,13 +1332,8 @@ def highlights_list(
     """List highlights for a bookmark."""
     client = get_client()
     try:
-        search_folder: str | int = (
-            folder
-            if folder in ("unread", "starred", "archive")
-            else _resolve_folder(client, folder)
-        )
-        bookmark = _find_bookmark(client, bookmark_id, folder=search_folder)
-        highlights = bookmark.get_highlights()
+        with err_console.status("Fetching highlights..."):
+            highlights = client.get_highlights(bookmark_id)
 
         use_json = json_output
 
@@ -1422,7 +1378,7 @@ def highlights_list(
         print_with_pager(table, len(highlights))
 
     except InstapaperError as e:
-        handle_error(e)
+        handle_error(e, "Check bookmark ID with 'instapyper bookmarks list'")
         raise typer.Exit(1) from None
 
 
@@ -1445,8 +1401,7 @@ def highlights_create(
     """Create a highlight in a bookmark."""
     client = get_client()
     try:
-        bookmark = _find_bookmark(client, bookmark_id)
-        highlight = bookmark.create_highlight(text, position)
+        highlight = client.create_highlight(bookmark_id, text, position)
 
         if json_output:
             console.print_json(
@@ -1464,7 +1419,7 @@ def highlights_create(
         quiet_print(f"ID: {highlight.highlight_id}")
 
     except InstapaperError as e:
-        handle_error(e)
+        handle_error(e, "Check bookmark ID with 'instapyper bookmarks list'")
         raise typer.Exit(1) from None
 
 
