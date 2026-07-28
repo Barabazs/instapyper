@@ -361,6 +361,158 @@ class TestFolders:
         client.set_folder_order({5001: 1, 5002: 0})
 
 
+class TestHighlights:
+    """Tests for client-level highlight operations."""
+
+    @responses.activate
+    def test_get_highlights(
+        self,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+        highlights_response: list[dict],
+    ) -> None:
+        responses.add(
+            responses.POST,
+            f"{BASE_URL}/bookmarks/100001/highlights",
+            json=highlights_response,
+            status=200,
+        )
+
+        client = Instapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        highlights = client.get_highlights(100001)
+
+        assert len(highlights) == 2
+        assert all(isinstance(h, Highlight) for h in highlights)
+        assert highlights[0].highlight_id == 9001
+        assert highlights[0].text == "This is highlighted text"
+
+    @responses.activate
+    def test_create_highlight(
+        self,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+    ) -> None:
+        responses.add(
+            responses.POST,
+            f"{BASE_URL}/bookmarks/100001/highlight",
+            json=[
+                {
+                    "type": "highlight",
+                    "highlight_id": 9003,
+                    "text": "New highlight",
+                    "position": 5,
+                    "time": 1700002200,
+                    "bookmark_id": 100001,
+                }
+            ],
+            status=200,
+        )
+
+        client = Instapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        highlight = client.create_highlight(100001, "New highlight", 5)
+
+        assert isinstance(highlight, Highlight)
+        assert highlight.highlight_id == 9003
+        assert highlight.position == 5
+        raw_body = responses.calls[-1].request.body
+        assert isinstance(raw_body, bytes)
+        body = parse_qs(raw_body.decode())
+        assert body["text"] == ["New highlight"]
+        assert body["position"] == ["5"]
+
+    @responses.activate
+    def test_create_highlight_failure(
+        self,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+    ) -> None:
+        responses.add(
+            responses.POST,
+            f"{BASE_URL}/bookmarks/100001/highlight",
+            json=[],
+            status=200,
+        )
+
+        client = Instapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        with pytest.raises(InstapaperError, match="Failed to create highlight"):
+            client.create_highlight(100001, "New highlight")
+
+
+class TestBookmarkText:
+    """Tests for get_bookmark_text."""
+
+    @responses.activate
+    def test_get_bookmark_text(
+        self,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+    ) -> None:
+        responses.add(
+            responses.POST,
+            f"{BASE_URL}/bookmarks/get_text",
+            body="<p>Hello world</p>",
+            status=200,
+        )
+
+        client = Instapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        assert client.get_bookmark_text(100001) == "<p>Hello world</p>"
+
+    @responses.activate
+    def test_get_bookmark_text_invalid_id(
+        self,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+    ) -> None:
+        responses.add(
+            responses.POST,
+            f"{BASE_URL}/bookmarks/get_text",
+            json=[
+                {"type": "error", "error_code": 1241, "message": "Invalid or missing bookmark_id"}
+            ],
+            status=400,
+        )
+
+        client = Instapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        with pytest.raises(InstapaperError, match="Invalid or missing bookmark_id"):
+            client.get_bookmark_text(999)
+
+    @responses.activate
+    def test_private_get_bookmark_text_returns_empty_on_error(
+        self,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+    ) -> None:
+        responses.add(
+            responses.POST,
+            f"{BASE_URL}/bookmarks/get_text",
+            json=[
+                {"type": "error", "error_code": 1241, "message": "Invalid or missing bookmark_id"}
+            ],
+            status=400,
+        )
+
+        client = Instapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        assert client._get_bookmark_text(999) == ""
+
+
 class TestErrorHandling:
     """Tests for error handling."""
 

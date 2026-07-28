@@ -8,6 +8,7 @@ import pytest
 from typer.testing import CliRunner
 
 from instapyper.cli import app
+from instapyper.exceptions import InstapaperError
 from instapyper.models import Tag
 
 from .conftest import (
@@ -799,10 +800,7 @@ class TestHighlightsList:
 
     def _mock_client_with_highlight(self, highlight: MagicMock | None) -> MagicMock:
         mock_client = MagicMock()
-        mock_bookmark = MagicMock()
-        mock_bookmark.bookmark_id = 100001
-        mock_bookmark.get_highlights.return_value = [highlight] if highlight else []
-        mock_client.get_bookmarks.return_value = [mock_bookmark]
+        mock_client.get_highlights.return_value = [highlight] if highlight else []
         return mock_client
 
     def _mock_highlight(self) -> MagicMock:
@@ -855,48 +853,121 @@ class TestHighlightsList:
         assert "7001\tImportant quote\t3\tline one line two" in result.stdout
 
     @patch("instapyper.cli.get_client")
-    def test_list_default_folder_unread(self, mock_get_client: MagicMock) -> None:
+    def test_list_fetches_directly_by_id(self, mock_get_client: MagicMock) -> None:
         mock_client = self._mock_client_with_highlight(self._mock_highlight())
         mock_get_client.return_value = mock_client
 
         result = runner.invoke(app, ["highlights", "list", "100001"])
         assert result.exit_code == 0
-        mock_client.get_bookmarks.assert_called_once_with(folder="unread", limit=500)
+        mock_client.get_highlights.assert_called_once_with(100001)
+        mock_client.get_bookmarks.assert_not_called()
 
     @patch("instapyper.cli.get_client")
-    def test_list_builtin_folder(self, mock_get_client: MagicMock) -> None:
-        mock_client = self._mock_client_with_highlight(self._mock_highlight())
-        mock_get_client.return_value = mock_client
-
-        result = runner.invoke(app, ["highlights", "list", "100001", "--folder", "starred"])
-        assert result.exit_code == 0
-        mock_client.get_bookmarks.assert_called_once_with(folder="starred", limit=500)
-        mock_client.get_folders.assert_not_called()
-
-    @patch("instapyper.cli._resolve_folder")
-    @patch("instapyper.cli.get_client")
-    def test_list_custom_folder_resolved(
-        self, mock_get_client: MagicMock, mock_resolve: MagicMock
-    ) -> None:
-        mock_client = self._mock_client_with_highlight(self._mock_highlight())
-        mock_get_client.return_value = mock_client
-        mock_resolve.return_value = 5001
-
-        result = runner.invoke(app, ["highlights", "list", "100001", "-F", "Tech"])
-        assert result.exit_code == 0
-        mock_resolve.assert_called_once_with(mock_client, "Tech")
-        mock_client.get_bookmarks.assert_called_once_with(folder=5001, limit=500)
-
-    @patch("instapyper.cli.get_client")
-    def test_list_not_found_in_folder(self, mock_get_client: MagicMock) -> None:
+    def test_list_api_error(self, mock_get_client: MagicMock) -> None:
         mock_client = MagicMock()
-        mock_client.get_bookmarks.return_value = []
+        mock_client.get_highlights.side_effect = InstapaperError(
+            "Invalid or missing bookmark_id", code=1241
+        )
         mock_get_client.return_value = mock_client
 
-        result = runner.invoke(app, ["highlights", "list", "100001", "--folder", "starred"])
+        result = runner.invoke(app, ["highlights", "list", "100001"])
         assert result.exit_code == 1
         output = result.stdout + (result.stderr or "")
-        assert "not found in starred" in output
+        assert "Invalid or missing bookmark_id" in output
+
+    def test_list_folder_flag_removed(self) -> None:
+        result = runner.invoke(app, ["highlights", "list", "100001", "--folder", "starred"])
+        assert result.exit_code == 2
+
+
+class TestHighlightsCreate:
+    """Tests for highlights create command."""
+
+    def _mock_client_with_created(self) -> MagicMock:
+        mock_client = MagicMock()
+        mock_highlight = MagicMock()
+        mock_highlight.highlight_id = 7001
+        mock_highlight.text = "Important quote"
+        mock_highlight.position = 0
+        mock_client.create_highlight.return_value = mock_highlight
+        return mock_client
+
+    @patch("instapyper.cli.get_client")
+    def test_create(self, mock_get_client: MagicMock) -> None:
+        mock_client = self._mock_client_with_created()
+        mock_get_client.return_value = mock_client
+
+        result = runner.invoke(app, ["highlights", "create", "100001", "Important quote"])
+        assert result.exit_code == 0
+        mock_client.create_highlight.assert_called_once_with(100001, "Important quote", 0)
+        assert "7001" in result.stdout
+
+    @patch("instapyper.cli.get_client")
+    def test_create_with_position_json(self, mock_get_client: MagicMock) -> None:
+        mock_client = self._mock_client_with_created()
+        mock_client.create_highlight.return_value.position = 100
+        mock_get_client.return_value = mock_client
+
+        result = runner.invoke(
+            app, ["highlights", "create", "100001", "Important quote", "-p", "100", "--json"]
+        )
+        assert result.exit_code == 0
+        mock_client.create_highlight.assert_called_once_with(100001, "Important quote", 100)
+        data = json.loads(result.stdout)
+        assert data["highlight_id"] == 7001
+        assert data["position"] == 100
+
+    @patch("instapyper.cli.get_client")
+    def test_create_api_error(self, mock_get_client: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_client.create_highlight.side_effect = InstapaperError(
+            "Invalid or missing bookmark_id", code=1241
+        )
+        mock_get_client.return_value = mock_client
+
+        result = runner.invoke(app, ["highlights", "create", "100001", "text"])
+        assert result.exit_code == 1
+        output = result.stdout + (result.stderr or "")
+        assert "Invalid or missing bookmark_id" in output
+
+
+class TestBookmarksText:
+    """Tests for bookmarks text command."""
+
+    @patch("instapyper.cli.get_client")
+    def test_text_output(self, mock_get_client: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_client.get_bookmark_text.return_value = "<p>Hello <b>world</b></p>"
+        mock_get_client.return_value = mock_client
+
+        result = runner.invoke(app, ["bookmarks", "text", "100001"])
+        assert result.exit_code == 0
+        mock_client.get_bookmark_text.assert_called_once_with(100001)
+        assert "Hello world" in result.stdout
+        assert "<p>" not in result.stdout
+
+    @patch("instapyper.cli.get_client")
+    def test_html_output(self, mock_get_client: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_client.get_bookmark_text.return_value = "<p>Hello <b>world</b></p>"
+        mock_get_client.return_value = mock_client
+
+        result = runner.invoke(app, ["bookmarks", "text", "100001", "--html"])
+        assert result.exit_code == 0
+        assert "<p>Hello <b>world</b></p>" in result.stdout
+
+    @patch("instapyper.cli.get_client")
+    def test_text_api_error(self, mock_get_client: MagicMock) -> None:
+        mock_client = MagicMock()
+        mock_client.get_bookmark_text.side_effect = InstapaperError(
+            "Invalid or missing bookmark_id", code=1241
+        )
+        mock_get_client.return_value = mock_client
+
+        result = runner.invoke(app, ["bookmarks", "text", "100001"])
+        assert result.exit_code == 1
+        output = result.stdout + (result.stderr or "")
+        assert "Invalid or missing bookmark_id" in output
 
 
 class TestGlobalFlags:

@@ -288,6 +288,149 @@ class TestAsyncFolders:
         assert folder.title == "New Folder"
 
 
+class TestAsyncHighlights:
+    """Tests for async client-level highlight operations."""
+
+    async def test_get_highlights(
+        self,
+        httpx_mock: HTTPXMock,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+        highlights_response: list[dict],
+    ) -> None:
+        httpx_mock.add_response(
+            url=f"{BASE_URL}/bookmarks/100001/highlights",
+            method="POST",
+            json=highlights_response,
+        )
+
+        client = AsyncInstapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        highlights = await client.get_highlights(100001)
+
+        assert len(highlights) == 2
+        assert all(isinstance(h, AsyncHighlight) for h in highlights)
+        assert highlights[0].highlight_id == 9001
+        assert highlights[0].text == "This is highlighted text"
+
+    async def test_create_highlight(
+        self,
+        httpx_mock: HTTPXMock,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+    ) -> None:
+        httpx_mock.add_response(
+            url=f"{BASE_URL}/bookmarks/100001/highlight",
+            method="POST",
+            json=[
+                {
+                    "type": "highlight",
+                    "highlight_id": 9003,
+                    "text": "New highlight",
+                    "position": 5,
+                    "time": 1700002200,
+                    "bookmark_id": 100001,
+                }
+            ],
+        )
+
+        client = AsyncInstapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        highlight = await client.create_highlight(100001, "New highlight", 5)
+
+        assert isinstance(highlight, AsyncHighlight)
+        assert highlight.highlight_id == 9003
+        assert highlight.position == 5
+
+    async def test_create_highlight_failure(
+        self,
+        httpx_mock: HTTPXMock,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+    ) -> None:
+        httpx_mock.add_response(
+            url=f"{BASE_URL}/bookmarks/100001/highlight",
+            method="POST",
+            json=[],
+        )
+
+        client = AsyncInstapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        with pytest.raises(InstapaperError, match="Failed to create highlight"):
+            await client.create_highlight(100001, "New highlight")
+
+
+class TestAsyncBookmarkText:
+    """Tests for async get_bookmark_text."""
+
+    async def test_get_bookmark_text(
+        self,
+        httpx_mock: HTTPXMock,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+    ) -> None:
+        httpx_mock.add_response(
+            url=f"{BASE_URL}/bookmarks/get_text",
+            method="POST",
+            html="<p>Hello world</p>",
+        )
+
+        client = AsyncInstapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        assert await client.get_bookmark_text(100001) == "<p>Hello world</p>"
+
+    async def test_get_bookmark_text_invalid_id(
+        self,
+        httpx_mock: HTTPXMock,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+    ) -> None:
+        httpx_mock.add_response(
+            url=f"{BASE_URL}/bookmarks/get_text",
+            method="POST",
+            status_code=400,
+            json=[
+                {"type": "error", "error_code": 1241, "message": "Invalid or missing bookmark_id"}
+            ],
+        )
+
+        client = AsyncInstapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        with pytest.raises(InstapaperError, match="Invalid or missing bookmark_id"):
+            await client.get_bookmark_text(999)
+
+    async def test_private_get_bookmark_text_returns_empty_on_error(
+        self,
+        httpx_mock: HTTPXMock,
+        consumer_key: str,
+        consumer_secret: str,
+        oauth_token: str,
+        oauth_token_secret: str,
+    ) -> None:
+        httpx_mock.add_response(
+            url=f"{BASE_URL}/bookmarks/get_text",
+            method="POST",
+            status_code=400,
+            json=[
+                {"type": "error", "error_code": 1241, "message": "Invalid or missing bookmark_id"}
+            ],
+        )
+
+        client = AsyncInstapaper(consumer_key, consumer_secret)
+        client.login_with_token(oauth_token, oauth_token_secret)
+        assert await client._get_bookmark_text(999) == ""
+
+
 class TestAsyncContextManager:
     """Tests for async context manager."""
 

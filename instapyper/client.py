@@ -184,16 +184,52 @@ class Instapaper:
 
         return data if isinstance(data, dict) else {"items": data}
 
-    def _get_bookmark_text(self, bookmark_id: int) -> str:
-        """Get the HTML content of a bookmark."""
+    def get_bookmark_text(self, bookmark_id: int) -> str:
+        """Get the processed HTML content of a bookmark.
+
+        Args:
+            bookmark_id: The bookmark ID to fetch content for.
+
+        Returns:
+            The bookmark's processed HTML.
+
+        Raises:
+            AuthenticationError: If not authenticated or token is invalid.
+            RateLimitError: If rate limit is exceeded.
+            ServerError: If the server returns a 5xx error.
+            InstapaperError: If the bookmark ID is invalid or another API error occurs.
+        """
         session = self._ensure_session()
         url = f"{BASE_URL}/{API_VERSION}/bookmarks/get_text"
         response = session.post(url, data={"bookmark_id": bookmark_id}, timeout=self._timeout)
 
-        if response.status_code != 200:
-            return ""
+        if response.status_code == 200:
+            return response.text
+        if response.status_code in (401, 403):
+            raise AuthenticationError("Invalid or expired OAuth token")
+        if response.status_code == 429:
+            raise RateLimitError("Rate limit exceeded")
+        if response.status_code >= 500:
+            raise ServerError(f"Server error: {response.status_code}")
 
-        return response.text
+        try:
+            data = response.json()
+        except ValueError:
+            data = None
+        items = data if isinstance(data, list) else [data]
+        for item in items:
+            if isinstance(item, dict) and item.get("type") == "error":
+                raise InstapaperError(
+                    item.get("message", "Unknown error"), code=item.get("error_code", 0)
+                )
+        raise InstapaperError(f"Failed to get bookmark text: HTTP {response.status_code}")
+
+    def _get_bookmark_text(self, bookmark_id: int) -> str:
+        """Get bookmark HTML, returning "" on failure (contract of the lazy model properties)."""
+        try:
+            return self.get_bookmark_text(bookmark_id)
+        except InstapaperError:
+            return ""
 
     # Account methods
 
@@ -424,6 +460,37 @@ class Instapaper:
         self._request("folders/set_order", order=order_str)
 
     # Highlight methods
+
+    def get_highlights(self, bookmark_id: int) -> list[Highlight]:
+        """Get all highlights for a bookmark.
+
+        Args:
+            bookmark_id: The bookmark ID to list highlights for.
+
+        Returns:
+            List of Highlight objects.
+        """
+        data = self._request(f"bookmarks/{bookmark_id}/highlights")
+        items = data.get("items", [])
+        return [Highlight.from_api(h, self) for h in items if h.get("type") == "highlight"]
+
+    def create_highlight(self, bookmark_id: int, text: str, position: int = 0) -> Highlight:
+        """Create a new highlight in a bookmark.
+
+        Args:
+            bookmark_id: The bookmark ID to create the highlight in.
+            text: The text to highlight.
+            position: Position of the highlight in the text.
+
+        Returns:
+            The created Highlight object.
+        """
+        data = self._request(f"bookmarks/{bookmark_id}/highlight", text=text, position=position)
+        items = data.get("items", [])
+        for item in items:
+            if isinstance(item, dict) and item.get("type") == "highlight":
+                return Highlight.from_api(item, self)
+        raise InstapaperError("Failed to create highlight")
 
     def delete_highlight(self, highlight_id: int) -> None:
         """Delete a highlight by ID."""
