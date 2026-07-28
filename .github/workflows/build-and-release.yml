@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # upload wheel to the GitHub release
+      contents: write # upload release artifacts to the GitHub release
       id-token: write # OIDC token for PyPI trusted publishing
     steps:
       - name: Checkout
@@ -29,8 +29,8 @@ jobs:
       - name: Build package
         run: uv build
 
-      - name: Upload wheel to GitHub release
-        run: gh release upload "$GITHUB_REF_NAME" dist/*.whl
+      - name: Upload wheel and sdist to GitHub release
+        run: gh release upload "$GITHUB_REF_NAME" dist/*
         env:
           GH_TOKEN: ${{ github.token }}
 
