@@ -214,3 +214,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Claude Code session handoffs (also keeps hatchling from packing them into local sdists)
+.handoffs/
