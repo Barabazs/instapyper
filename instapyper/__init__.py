@@ -27,7 +27,7 @@ from .exceptions import (
 )
 from .models import Bookmark, BookmarksResponse, Folder, Highlight, Tag, User
 
-__version__ = "0.0.6"
+__version__ = "0.0.7"
 
 __all__ = [
     # Sync client
