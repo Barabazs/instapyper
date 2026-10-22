@@ -69,7 +69,7 @@ path = "instapyper/__init__.py"
 
 [tool.hatch.build.targets.sdist]
 exclude = [
-    "CLAUDE.md",
+    "AGENTS.md",
     ".github",
 ]
 
