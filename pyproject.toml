@@ -59,6 +59,10 @@ build-backend = "hatchling.build"
 [tool.uv]
 # 7-day dependency cooldown (supply chain protection)
 exclude-newer = "1 week"
+# certifi exempted for GHSA-6q48-6c7w-9gw2 (critical, compromised emSign CA): the fix,
+# 2026.10.19, was uploaded 2026-10-20 and the diff from 2026.7.22 was reviewed (one root
+# removed, nothing added). Drop this override on or after 2026-10-27.
+exclude-newer-package = { certifi = "2026-10-21T00:00:00Z" }
 
 [tool.hatch.version]
 path = "instapyper/__init__.py"
