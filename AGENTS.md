@@ -5,7 +5,7 @@ Python wrapper for the Instapaper Full API (sync + async clients + Typer CLI). P
 ## Commands
 
 ```bash
-uv sync --group dev --all-extras   # install (CLI + keyring extras needed for tests)
+uv sync                           # install (dev group pulls in the CLI + keyring extras tests need)
 uv run pytest
 uv run ruff check . && uv run ruff format --check .
 uv run ty check .                  # type checker is astral ty, not mypy

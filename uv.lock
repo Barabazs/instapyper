@@ -414,6 +414,7 @@ keyring = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "instapyper", extra = ["all"] },
     { name = "pytest" },
     { name = "pytest-asyncio" },
     { name = "pytest-httpx" },
@@ -440,6 +441,7 @@ provides-extras = ["all", "cli", "keyring"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "instapyper", extras = ["all"] },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-asyncio", specifier = ">=0.24" },
     { name = "pytest-httpx", specifier = ">=0.35" },
